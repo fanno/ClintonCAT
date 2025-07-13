@@ -2,6 +2,11 @@ import { IElementData } from '@/common/services/content-scanner.types';
 import { DOMMessengerAction, IDOMMessengerInterface, IShowInPageNotificationPayload } from './dom-messenger.types';
 import browser from 'webextension-polyfill';
 
+import React from 'react';
+import { createRoot } from 'react-dom/client';
+
+import Inspagenotification from '@/ui/inpagenotification/Inspagenotification';
+
 type DOMMessagePayload =
     | { action: DOMMessengerAction.DOM_QUERY_SELECTOR_ALL; selector: string }
     | { action: DOMMessengerAction.DOM_QUERY_SELECTOR_ALL_AS_TEXT; selector: string }
@@ -236,67 +241,190 @@ class DOMMessenger implements IDOMMessengerInterface {
             return true;
         });
     }
-    private static displayNotification(message: string): void {
-        const containerId = 'clint-cat-notification-container';
-        let container = document.getElementById(containerId);
 
-        if (!container) {
-            container = document.createElement('div');
-            container.id = containerId;
-            Object.assign(container.style, {
-                position: 'fixed',
-                top: '10px',
-                right: '10px',
-                zIndex: '2147483647',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '10px',
-                maxWidth: '300px',
-            });
-            document.body.appendChild(container);
+    /*
+        makeId unique maybe this should be eutils helper ?
+        Original code from https://stackoverflow.com/questions/1349404/generate-a-string-of-random-characters
+    */
+    static elementId: string = '';
+    public static makeId(): string {
+        if (DOMMessenger.elementId == '') {
+            const length = 20;
+            let result = '';
+            const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+            const charactersLength = characters.length;
+            for (let i = 0; i < length; i++) {
+                result += characters.charAt(Math.floor(Math.random() * charactersLength));
+            }
+            DOMMessenger.elementId = result;
         }
-        const notificationElement = document.createElement('div');
-        notificationElement.appendChild(document.createTextNode(message));
+        return DOMMessenger.elementId;
+    }
 
-        const baseStyle: Partial<CSSStyleDeclaration> = {
-            padding: '15px',
-            borderRadius: '5px',
-            color: '#fff',
-            backgroundColor: '#4CAF50',
-            boxShadow: '0 2px 5px rgba(0,0,0,0.2)',
-            opacity: '1',
-            transition: 'opacity 0.5s ease-out',
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
+    static timeoutID: NodeJS.Timeout;
+    private static displayNotification(message: string): void {
+        /*
+            if we are to use timeout we should clear,
+            if not it creats a buggy behavior if more than one message is "displayed."
+        */
+        if (DOMMessenger.timeoutID) {
+            clearTimeout(DOMMessenger.timeoutID);
+        }
+
+        /*
+            All styling in this, function is up for change, improvement.
+            the use of shadowDOM is in my opinion a must.
+        */
+        const containerId = DOMMessenger.makeId();
+        const hostcontainer = document.getElementById(containerId);
+
+        // remove the exsisting container, so a new can be created.
+        if (hostcontainer) {
+            hostcontainer.remove();
+        }
+        const host = document.createElement('div');
+        host.id = containerId;
+
+        const shadow = host.attachShadow({ mode: 'open' }); // should we use closed to protect the content ?
+
+        const root = createRoot(shadow);
+        root.render(React.createElement(Inspagenotification)); // <- No JSX used
+
+        // styling added here is to prevent css from "parent" to leak in to the shadowDOM
+        // here the contailer styling can also be added if need be.
+        shadow.innerHTML = `
+            <style>
+                :host {
+                    all: initial;
+                    display: block;
+
+                    /* Block inherited root styles */
+                    font-family: system-ui, sans-serif;
+                    color: black;
+                    --main-color: initial;
+                    --some-other-var: initial;
+                }
+
+                *, *::before, *::after {
+                    all: unset;
+                    display: revert;
+                    box-sizing: border-box;
+                }
+
+                /* Optionally restore HTML5 block elements */
+                    div, p, h1, h2, h3, h4, h5, h6, section, article, header, footer {
+                    display: block;
+                }
+                div {
+                    all: initial;
+                }
+                body, div {
+                    font-family: system-ui, sans-serif;
+                    font-size: 14px;
+                    color: black;
+                    background: white;
+                }        
+            </style>
+`;
+
+        const container = document.createElement('div');
+        shadow.appendChild(container);
+
+        /*
+            clear time out if mouse moves over the message assume user whants to interact with it.
+        */
+        container.onmouseover = () => {
+            if (DOMMessenger.timeoutID) {
+                clearTimeout(DOMMessenger.timeoutID);
+            }
         };
 
-        Object.assign(notificationElement.style, baseStyle);
-
-        const closeButton = document.createElement('button');
-        closeButton.textContent = '×';
-        Object.assign(closeButton.style, {
-            marginLeft: '15px',
-            background: 'none',
-            border: 'none',
-            color: 'inherit',
-            fontSize: '20px',
-            cursor: 'pointer',
-            padding: '0',
-            lineHeight: '1',
+        Object.assign(container.style, {
+            background: '#fff',
+            boxShadow: '0 4px 40px 3px rgb(0 0 0 / 100%)',
+            padding: '10px',
+            margin: '20px',
+            width: '400px',
+            height: 'auto',
+            position: 'fixed',
+            right: '0px',
+            top: '0px',
+            zIndex: '2147483647',
+            display: 'inline-block',
+            borderColor: 'red',
+            borderStyle: 'solid',
+            borderWidth: '2px',
+            borderRadius: '0 0 1rem 1rem',
+            marginTop: '0',
+            borderTop: 'none',
         });
-        closeButton.onclick = () => {
-            notificationElement.style.opacity = '0';
-            setTimeout(() => notificationElement.remove(), 500);
-        };
-        notificationElement.appendChild(closeButton);
 
+        const notificationElement = document.createElement('div');
+
+        const closeElement = document.createElement('span');
+        closeElement.appendChild(document.createTextNode('✖'));
+        Object.assign(closeElement.style, {
+            float: 'right',
+            cursor: 'pointer',
+            fontWeight: 'bold',
+            marginLeft: '10px',
+        });
+        closeElement.onclick = () => {
+            if (DOMMessenger.timeoutID) {
+                clearTimeout(DOMMessenger.timeoutID);
+            }
+            host.remove();
+            /* TODO:
+                feature so that we can "mute" further popups so they dont keep comming up every time up.
+                if/when each individual page is listed in the message, each page should have its own "dismiss", button.
+                    this should be the case so that only if new pages are displayed (maybe if modifyed too?),
+                    not sure if cargo file will has this info
+            */
+        };
+
+        const linkElement = document.createElement('a');
+        linkElement.href = 'https://consumerrights.wiki/'; // should be a variable
+        linkElement.target = '_blank';
+
+        Object.assign(linkElement.style, {
+            display: 'flex',
+            height: '100%',
+            alignItems: 'center',
+            minWidth: '13.875em',
+            color: '#4b77d6',
+            textDecoration: 'none',
+        });
+
+        const imgElement = document.createElement('img');
+        imgElement.src = 'https://consumerrights.wiki/images/logo/new_fixed_logo.png'; // should be a variable
+        Object.assign(imgElement.style, {
+            width: '50px',
+            height: '50px',
+            display: 'inline-block',
+        });
+
+        const textSpanElement = document.createElement('span');
+        const textStrongElement = document.createElement('strong');
+
+        textStrongElement.appendChild(document.createTextNode('Consumer Rights Wiki'));
+
+        textSpanElement.appendChild(textStrongElement);
+
+        linkElement.appendChild(imgElement);
+        linkElement.appendChild(textSpanElement);
+
+        notificationElement.appendChild(closeElement);
+        notificationElement.appendChild(linkElement);
+        notificationElement.appendChild(document.createTextNode(message));
         container.prepend(notificationElement);
 
-        setTimeout(() => {
-            if (notificationElement.parentElement) {
-                notificationElement.style.opacity = '0';
-                setTimeout(() => notificationElement.remove(), 500);
+        document.body.appendChild(host);
+
+        // i am not sure we really want this, if we do it should be a option from the user. (maybe time ajustable ?)
+        DOMMessenger.timeoutID = setTimeout(() => {
+            const hostcontainer = document.getElementById(containerId);
+            if (hostcontainer) {
+                hostcontainer.remove();
             }
         }, 5000);
     }
