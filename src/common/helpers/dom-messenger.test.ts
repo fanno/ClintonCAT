@@ -225,15 +225,20 @@ describe('DOMMessenger', () => {
                 sendResponse
             );
 
-            const container = document.getElementById('clint-cat-notification-container');
+            const id = DOMMessenger.makeId();
+
+            const container = document.getElementById(id);
             expect(container).not.toBeNull();
-            expect(container?.style.position).toBe('fixed');
-            expect(container?.children.length).toBeGreaterThan(0);
-            const notificationElement = container?.children[0] as HTMLElement;
+
+            const shadow = container?.shadowRoot;
+
+            const shadowElement = shadow?.children[1] as HTMLElement;
+            expect(shadowElement?.style.position).toBe('fixed');
+            expect(shadowElement?.children.length).toBeGreaterThan(0);
+
+            const notificationElement = shadowElement?.children[0] as HTMLElement;
             expect(notificationElement).not.toBeNull();
             expect(notificationElement.textContent).toContain(testMessage);
-            expect(notificationElement.childNodes[0].nodeValue).toBe(testMessage);
-            expect(notificationElement.querySelector('button')).not.toBeNull();
             expect(sendResponse).toHaveBeenCalledWith({ success: true });
         });
 

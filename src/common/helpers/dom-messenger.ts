@@ -242,7 +242,7 @@ class DOMMessenger implements IDOMMessengerInterface {
         Original code from https://stackoverflow.com/questions/1349404/generate-a-string-of-random-characters
     */
     static elementId: string = '';
-    private static makeId(): string {
+    public static makeId(): string {
         if (DOMMessenger.elementId == '') {
             const length = 20;
             let result = '';
