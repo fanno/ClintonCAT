@@ -14,6 +14,16 @@ class DefaultScanner extends BaseDomainScanner {
         return params.mainDomain;
     }
 
+    /**
+     *
+     * @param params
+     * @returns
+     */
+    // eslint-disable-next-line @typescript-eslint/require-await, @typescript-eslint/no-unused-vars
+    protected override async searchContent(params: IScanParameters): Promise<string[]> {
+        return [];
+    }
+
     async scan(params: IScanParameters): Promise<boolean> {
         const foundPagesViaBaseScan = await super.scan(params);
 

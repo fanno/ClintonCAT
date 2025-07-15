@@ -10,6 +10,11 @@ export abstract class BaseDomainScanner implements IContentScannerPlugin {
         return null;
     }
 
+    // eslint-disable-next-line @typescript-eslint/require-await, @typescript-eslint/no-unused-vars
+    protected async searchContent(params: IScanParameters): Promise<string[]> {
+        return [];
+    }
+
     private performSearch(
         searchFn: () => CATWikiPageSearchResults,
         description: string,
@@ -41,7 +46,6 @@ export abstract class BaseDomainScanner implements IContentScannerPlugin {
         return found;
     }
 
-    // eslint-disable-next-line @typescript-eslint/require-await
     async scan(params: IScanParameters): Promise<boolean> {
         const pagesDb = params.pagesDb;
         let foundAnyPages = false;
@@ -59,42 +63,52 @@ export abstract class BaseDomainScanner implements IContentScannerPlugin {
                 scannerId
             ) || foundAnyPages;
 
+        let entries: string[] = [];
+
         const extractedEntity = this.extractEntity(params.url);
-
         if (extractedEntity) {
-            console.log(`${scannerId}: Extracted entity: "${extractedEntity}"`);
+            entries.push(extractedEntity);
+        }
 
-            foundAnyPages =
-                this.performSearch(
-                    () => pagesDb.getPagesForCategory(extractedEntity),
-                    `Category Match ('${extractedEntity}')`,
-                    combinedResults,
-                    scannerId
-                ) || foundAnyPages;
+        const searchContentResults = await this.searchContent(params);
+        entries = entries.concat(searchContentResults);
 
-            foundAnyPages =
-                this.performSearch(
-                    () => pagesDb.findConsecutiveWords(extractedEntity, 1, true),
-                    `Consecutive Words Match ('${extractedEntity}')`,
-                    combinedResults,
-                    scannerId
-                ) || foundAnyPages;
+        if (entries.length > 0) {
+            entries.forEach((entry) => {
+                console.log(`${scannerId}: Extracted entity: "${entry}"`);
 
-            foundAnyPages =
-                this.performSearch(
-                    () => pagesDb.simpleSearch(extractedEntity),
-                    `Simple Substring Match ('${extractedEntity}')`,
-                    combinedResults,
-                    scannerId
-                ) || foundAnyPages;
+                foundAnyPages =
+                    this.performSearch(
+                        () => pagesDb.getPagesForCategory(entry),
+                        `Category Match ('${entry}')`,
+                        combinedResults,
+                        scannerId
+                    ) || foundAnyPages;
 
-            foundAnyPages =
-                this.performSearch(
-                    () => pagesDb.fuzzySearch(extractedEntity),
-                    `Fuzzy Word Match ('${extractedEntity}')`,
-                    combinedResults,
-                    scannerId
-                ) || foundAnyPages;
+                foundAnyPages =
+                    this.performSearch(
+                        () => pagesDb.findConsecutiveWords(entry, 1, true),
+                        `Consecutive Words Match ('${entry}')`,
+                        combinedResults,
+                        scannerId
+                    ) || foundAnyPages;
+
+                foundAnyPages =
+                    this.performSearch(
+                        () => pagesDb.simpleSearch(entry),
+                        `Simple Substring Match ('${entry}')`,
+                        combinedResults,
+                        scannerId
+                    ) || foundAnyPages;
+
+                foundAnyPages =
+                    this.performSearch(
+                        () => pagesDb.fuzzySearch(entry),
+                        `Fuzzy Word Match ('${entry}')`,
+                        combinedResults,
+                        scannerId
+                    ) || foundAnyPages;
+            });
         } else {
             console.log(`${scannerId}: No specific entity extracted from URL, skipping entity-based searches.`);
         }
