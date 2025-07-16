@@ -3,12 +3,26 @@ import browser from 'webextension-polyfill';
 
 DOMMessenger.registerMessageListener();
 
-const pageInfoPayload = {
-    domain: window.location.hostname,
-    url: window.location.href,
-};
+function sendPageInfo() {
+    const pageInfoPayload = {
+        domain: window.location.hostname,
+        url: window.location.href,
+    };
 
-void browser.runtime.sendMessage({
-    type: 'pageInfo',
-    payload: pageInfoPayload,
-});
+    void browser.runtime.sendMessage({
+        type: 'pageInfo',
+        payload: pageInfoPayload,
+    });
+}
+
+sendPageInfo();
+
+let lastUrl = location.href;
+setInterval(() => {
+    const currentUrl = location.href;
+    if (currentUrl !== lastUrl) {
+        lastUrl = currentUrl;
+
+        sendPageInfo();
+    }
+}, 1000);
