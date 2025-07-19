@@ -41,9 +41,7 @@ const observer = new MutationObserver((mutationsList) => {
 
         if (!_ignore) {
             updateTimerRunnig = true;
-            console.log('MutationObserver::setTimeout::SET');
             setTimeout(() => {
-                console.log('MutationObserver::setTimeout::DONE');
                 sendPageInfo();
                 updateTimerRunnig = false;
             }, 5000);
