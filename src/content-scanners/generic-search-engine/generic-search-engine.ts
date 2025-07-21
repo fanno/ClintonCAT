@@ -52,6 +52,11 @@ const SearchEngines: ISearchEngine[] = [
         search: 'search',
         path: '^/wiki/([^/?]+)',
     },
+    {
+        domain: 'ebay',
+        search: '_skw',
+        path: null,
+    },
 ];
 
 /**
