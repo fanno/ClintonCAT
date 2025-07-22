@@ -8,27 +8,10 @@ export interface IInpagenotificationPage {
     page: PageEntry;
 }
 
-/**
- *
- * @param param0 InpagenotificationPageProps
- * @returns React
- *
- * Creates a React to display page info
- *
- * It will only be displayed if the user has previously not dismissed it.
- *
- * TODO: I think the dismiss should de depend on when the page was last updated.
- *  I would sugges that we add page.lastmodifyed or something,
- *  dismiss could also have a time component.
- */
 const InpagenotificationPage = ({ page }: IInpagenotificationPage) => {
     const componentReferance = React.createRef<HTMLParagraphElement>();
 
-    // TODO: should localStorage be a helper ? or should another aproact be made, would clean up the code a bit.
-    const now = Date.now();
-    const storedPage = LocalStorage.readPage(page.pageId);
-
-    const showPage = now > storedPage.timestamp + 60 * 60 * 1000; // curent mute 1 hour, TODO: should come from an option.
+    const showPage = Date.now() > LocalStorage.readPage(page.pageId).timestamp + 60 * 60 * 1000; // curent mute 1 hour, TODO: should come from an option.
 
     const closePage = () => {
         const storedPage = LocalStorage.readPage(page.pageId);
@@ -42,16 +25,35 @@ const InpagenotificationPage = ({ page }: IInpagenotificationPage) => {
         }
     };
 
+    const seeMore = (event: React.MouseEvent<HTMLElement>) => {
+        event.preventDefault();
+        const categoryHeader = event.currentTarget as HTMLElement;
+        if (categoryHeader) {
+            const categoryContent = categoryHeader.parentElement?.parentElement?.querySelector('.page-info');
+            if (categoryContent) {
+                categoryContent.classList.toggle('hidden');
+
+                categoryHeader.textContent = categoryContent.classList.contains('hidden') ? '⯈' : '▼';
+            }
+        }
+    };
+
     if (showPage) {
         return (
             <>
-                <p className="pageItem" ref={componentReferance}>
+                <p className="page" ref={componentReferance}>
+                    <div className="page-menu">
+                        <span className="page-more" onClick={seeMore}>
+                            ⯈
+                        </span>
+                        <span className="page-close" onClick={closePage}>
+                            ✖
+                        </span>
+                    </div>
                     <a href={page.url()} target="_blank">
                         {page.pageTitle}
                     </a>
-                    <span className="close" onClick={closePage}>
-                        ✖
-                    </span>
+                    <div className="page-info hidden">{page.popupText}</div>
                 </p>
             </>
         );
@@ -64,18 +66,51 @@ export interface IInpagenotificationMessage {
     message: string;
 }
 
-/**
- *
- * @param param0 InpagenotificationMessageProps
- * @returns React
- *
- * Creates a React to display message
- */
 const InpagenotificationMessage = ({ message }: IInpagenotificationMessage) => {
     if (message && message.length > 0) {
         return (
             <>
-                <p className="pageItem">{message}</p>
+                <p className="message">{message}</p>
+            </>
+        );
+    } else {
+        return <></>;
+    }
+};
+
+export interface IInpagenotificationCategory {
+    pages: [string, PageEntry[]];
+}
+
+const InpagenotificationCategory = ({ pages }: IInpagenotificationCategory) => {
+    const cattegoryTitle = pages[0];
+    const pagesList = pages[1];
+
+    if (cattegoryTitle && pagesList) {
+        const cattegoryPages = pagesList.map((page, index) => <InpagenotificationPage key={index} page={page} />);
+
+        const toggleCategory = (event: React.MouseEvent<HTMLElement>) => {
+            event.preventDefault();
+            const categoryHeader = event.currentTarget as HTMLElement;
+            if (categoryHeader) {
+                const categoryContent = categoryHeader.parentElement?.querySelector('.category-content');
+                const arrow = categoryHeader.querySelector('.arrow');
+                const categoryTitle = categoryHeader.nextElementSibling;
+                if (categoryContent && arrow && categoryTitle) {
+                    categoryContent.classList.toggle('show-content');
+
+                    arrow.textContent = categoryContent.classList.contains('show-content') ? '▼' : '⯈';
+                }
+            }
+        };
+        return (
+            <>
+                <div className="category">
+                    <div className="category-header" onClick={toggleCategory}>
+                        <span className="arrow">⯈</span> <span className="label">{cattegoryTitle}</span>
+                    </div>
+                    <div className="category-content">{cattegoryPages}</div>
+                </div>
             </>
         );
     } else {
@@ -89,16 +124,6 @@ export interface IInpagenotification {
     pages: IPageEntry[];
 }
 
-/**
- *
- * @param param0 InpagenotificationProps
- * @returns React
- *
- * base64 encoded image so that domains cant block it. (eg ikea.com) it blosk it via header
- * curently is based on original size but it shouled propearly be a 1:1 so no scaling overhead.
- *
- * Creates a React object for a inpage notification
- */
 const Inpagenotification = ({ containerId, message, pages }: IInpagenotification) => {
     /**
      * timeout even for hiding the notification after a set time
@@ -112,9 +137,6 @@ const Inpagenotification = ({ containerId, message, pages }: IInpagenotification
         }
     }, 5000);
 
-    /**
-     * close event when nortice is manually hidden.
-     */
     const closeNotification = () => {
         const container = document.getElementById(containerId);
         if (timeoutID) {
@@ -125,27 +147,23 @@ const Inpagenotification = ({ containerId, message, pages }: IInpagenotification
         }
     };
 
-    /**
-     * mouse over event of the notice to prevent altu hide
-     */
     const mouseOver = () => {
         if (timeoutID) {
             clearTimeout(timeoutID);
         }
     };
 
-    /**
-     * recreate PageEntry from object.
-     */
-    const _pages: PageEntry[] = [];
+    const _pages = new Map<string, PageEntry[]>();
     pages.forEach((page) => {
-        _pages.push(new PageEntry(page));
+        if (!_pages.has(page.category)) {
+            _pages.set(page.category, []);
+        }
+        _pages.get(page.category)?.push(new PageEntry(page));
     });
 
-    /**
-     * create a list of InpagenotificationMessage
-     */
-    const componentPages = _pages.map((page, index) => <InpagenotificationPage key={index} page={page} />);
+    const inpagenotificationCategorysPages = [..._pages].map((pages, index) => (
+        <InpagenotificationCategory key={index} pages={pages} />
+    ));
 
     return (
         <>
@@ -177,12 +195,14 @@ const Inpagenotification = ({ containerId, message, pages }: IInpagenotification
                 /**
                  * Start Optionally restore HTML5 block elements
                  */
-                div, p, h1, h2, h3, h4, h5, h6, section, article, header, footer {
-                    display: block;
-                }
                 div {
                     all: initial;
                 }
+
+                div, p, h1, h2, h3, h4, h5, h6, section, article, header, footer {
+                    display: block;
+                }
+
                 body, div {
                     font-family: system-ui, sans-serif;
                     font-size: 14px;
@@ -201,7 +221,7 @@ const Inpagenotification = ({ containerId, message, pages }: IInpagenotification
                     box-shadow: rgb(0, 0, 0) 0px 4px 40px 3px;
                     padding: 10px;
                     margin: 0px 20px 20px;
-                    width: 400px;
+                    width: 250px;
                     height: auto;
                     position: fixed;
                     right: 0px;
@@ -214,30 +234,42 @@ const Inpagenotification = ({ containerId, message, pages }: IInpagenotification
                     border-radius: 0px 0px 1rem 1rem;
                 }
 
-                .close {
-                    float: right;
-                    cursor: pointer;
-                    font-weight:
-                    bold;
-                    margin-left: 10px;
-                }
-                    
-                .pageItem {
-                    margin-top: 10px;
-
-                    border-radius: 12px;
-                    background-color: rgba(0, 0, 0, 0.1);
-                    border: 1px solid rgba(0, 0, 0, 0.3);
+                .message {
                     padding: 0.5em;
                     color: #333;
                     max-width: 400px;
                 }
 
-                .link {
-                    display: flex;
+                .page {
+                    padding: 0.5em;
+                    color: #333;
+                    max-width: 400px;
+                }
+                .page:not(:first-child) {
+                    margin-top: 10px;
+                }
+
+                .page-menu {
+                    float: right;
+                    cursor: pointer;
+                    font-weight:
+                    bold;
+                 
+                    margin-left: 10px;
+                }
+
+                .page-more {
+                    margin-right: 10px;
+                }
+
+                .page-close {
+                }                    
+
+                .wikilink {
                     height: 100%;
                     align-items: center;
                     min-width: 13.875em;
+                    font-size: 1.5em;
                 }
 
                 a {
@@ -245,20 +277,67 @@ const Inpagenotification = ({ containerId, message, pages }: IInpagenotification
                     color: rgb(75, 119, 214);
                     text-decoration: none;
                 }
+
+                .category {
+                    border: 1px solid #ccc;
+                    border-radius: 6px;
+                    overflow: hidden;
+                    font-family: Arial, sans-serif;
+                    overflow: hidden;
+                    transition: max-height 0.3s ease;
+                    background-color: #fff;                    
+                }
+
+                .category:not(:first-child) {
+                    margin-top: 10px;
+                }
+
+                .category-header {
+                    background-color: #f5f5f5;
+                    padding: 5px;
+                    cursor: pointer;
+                    font-weight: bold;
+                    user-select: none;
+                }
+
+                .category-content {
+                    max-height: 0;
+                    overflow: hidden;
+                    transition: max-height 0.3s ease;
+                    background-color: #fff;
+                }
+
+                .show-content {
+                    max-height: 500px;
+                }
+
+                .page-info.hidden {
+                    max-height: 0;
+                    overflow: hidden;
+                    transition: max-height 0.3s ease;
+                    background-color: #fff;
+                }
+
+                .categorys {
+                    overflow-y: auto;
+                    max-height: calc(100dvh - 115px);
+                }
                 `}
             </style>
 
             <div className="container" onMouseOver={mouseOver}>
-                <span className="close" onClick={closeNotification}>
-                    ✖
-                </span>
-                <a className="link" href="https://consumerrights.wiki/" target="_blank">
+                <div className="page-menu">
+                    <span className="page-close" onClick={closeNotification}>
+                        ✖
+                    </span>
+                </div>
+                <a className="wikilink" href="https://consumerrights.wiki/" target="_blank">
                     <span>
                         <strong>Consumer Rights Wiki</strong>
                     </span>
                 </a>
                 <InpagenotificationMessage message={message} />
-                {componentPages}
+                <div className="categorys">{inpagenotificationCategorysPages}</div>
             </div>
         </>
     );
