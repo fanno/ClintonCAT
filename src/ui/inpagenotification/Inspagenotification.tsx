@@ -41,7 +41,7 @@ const InpagenotificationPage = ({ page }: IInpagenotificationPage) => {
     if (showPage) {
         return (
             <>
-                <p className="page" ref={componentReferance}>
+                <div className="page" ref={componentReferance}>
                     <div className="page-menu">
                         <span className="page-more" onClick={seeMore}>
                             ⯈
@@ -54,7 +54,7 @@ const InpagenotificationPage = ({ page }: IInpagenotificationPage) => {
                         {page.pageTitle}
                     </a>
                     <div className="page-info hidden">{page.popupText}</div>
-                </p>
+                </div>
             </>
         );
     } else {
