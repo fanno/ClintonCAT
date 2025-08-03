@@ -146,10 +146,6 @@ const InpagenotificationPage = ({ page }: IInpagenotificationPage) => {
         showPage = false;
     }
 
-    let pageInfoElement;
-    if (showMore) {
-        pageInfoElement = <InpagenotificationPageInfo page={page} />;
-    }
     if (showPage) {
         return (
             <>
@@ -162,7 +158,7 @@ const InpagenotificationPage = ({ page }: IInpagenotificationPage) => {
                         pageReferance={componentReferance}
                     />
                     <InpagenotificationPageLink page={page} />
-                    {pageInfoElement}
+                    {showMore && <InpagenotificationPageInfo page={page} />}
                 </div>
             </>
         );
