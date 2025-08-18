@@ -4,7 +4,7 @@ import ContentScanner from '@/common/services/content-scanner';
 import { IScanParameters } from '@/common/services/content-scanner.types';
 import Preferences from '@/common/services/preferences';
 import DOMMessenger from '@/common/helpers/dom-messenger';
-import { CATWikiPageSearchResults, PageEntry, PagesDB } from '@/database';
+import { CATWikiPageSearchResults, PagesDB } from '@/database';
 
 import BrowserLocalStorage from '@/storage/browser/browser-local-storage';
 import BrowserSyncStorage from '@/storage/browser/browser-sync-storage';
@@ -12,6 +12,7 @@ import StorageCache from '@/storage/storage-cache';
 import { IDOMMessengerInterface } from './common/helpers/dom-messenger.types';
 import { MessageHandlerContext } from '@/common/messages/messages.types';
 import browser from 'webextension-polyfill';
+import { Page } from './models/page';
 
 import NotificationsFilter, { INotificationsFilter } from './utils/helpers/notification-filter';
 
@@ -73,9 +74,9 @@ export class Main {
 
                         if (pageNotificationsEnabled) {
                             const message = `Found ${totalPages.toString()} CAT page(s).`;
-                            const entries: object[] = [];
+                            const entries: Page[] = [];
                             pageEntries.forEach((page) => {
-                                entries.push(new PageEntry(page).toObject());
+                                entries.push(page);
                             });
 
                             domMessenger
