@@ -1,6 +1,6 @@
 import Preferences from '@/common/services/preferences';
 
-import { IPageEntry } from '@/database';
+import { Page } from '@/models/page';
 
 export interface INotificationsFilter {
     timestamp: number;
@@ -28,11 +28,7 @@ class NotificationsFilter {
             .catch((error: unknown) => console.error('Failed to get notifications filter:', error));
     }
 
-    public static filterPages(
-        pages: readonly IPageEntry[],
-        filters: Record<string, INotificationsFilter>,
-        muteTime: number
-    ) {
+    public static filterPages(pages: readonly Page[], filters: Record<string, INotificationsFilter>, muteTime: number) {
         const now = Date.now();
         return pages.filter((entry) => {
             const existingPage = filters[entry.pageId];

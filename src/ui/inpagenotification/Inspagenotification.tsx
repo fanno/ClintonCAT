@@ -58,10 +58,6 @@ const InpagenotificationPage = ({ page }: IInpagenotificationPage) => {
                 </a>
                 <div className="page-info hidden">{page.description}</div>
             </div>
-            <a href={page.url()} target="_blank">
-                {page.pageName}
-            </a>
-            <div className="page-info hidden">{page.description}</div>
         </>
     );
 };
