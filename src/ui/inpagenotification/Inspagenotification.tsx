@@ -1,56 +1,58 @@
 import React from 'react';
 
-import { IPageEntry, PageEntry } from '@/database';
+import { ArticleType, IPage, Page } from '@/models/page';
+import { CompanyPage, ICompanyPage } from '@/models/company';
+import { IIncidentPage, IncidentPage } from '@/models/incident';
+import { IProductPage, ProductPage } from '@/models/product';
+import { IProductLinePage, ProductLinePage } from '@/models/product-line';
 
-import LocalStorage from '@/utils/helpers/local-storage';
-
-export interface IInpagenotificationPage {
-    page: PageEntry;
+export interface IInPageNotificationPage {
+    page: Page;
 }
 
-export interface IInpagenotificationPageMenu {
+export interface IInPageNotificationPageMenu {
     pageReferance: React.RefObject<HTMLParagraphElement | null>;
 }
 
-export interface IInpagenotificationPageOptions {
+export interface IInPageNotificationPageOptions {
     showMore: boolean;
     showMute: boolean;
     showHide: boolean;
 }
 
-export interface IInpagenotificationMessage {
+export interface IInPageNotificationMessage {
     message: string;
 }
 
-export interface IInpagenotificationCategory {
-    pages: [string, PageEntry[]];
+export interface IInPageNotificationCategory {
+    pages: [string, Page[]];
 }
 
-export interface IInpagenotification {
+export interface IInPageNotification {
     containerId: string;
     message: string;
-    pages: IPageEntry[];
+    pages: IPage[];
 }
 
-const InpagenotificationPageMenu = ({
+const InPageNotificationPageMenu = ({
     page,
     pageReferance,
     showMore,
     showMute,
     showHide,
-}: IInpagenotificationPage & IInpagenotificationPageMenu & IInpagenotificationPageOptions) => {
+}: IInPageNotificationPage & IInPageNotificationPageMenu & IInPageNotificationPageOptions) => {
     return (
         <>
             <div className="page-menu">
-                {showMore && <InpagenotificationPageMore />}
-                {showMute && <InpagenotificationPageMute page={page} pageReferance={pageReferance} />}
-                {showHide && <InpagenotificationPageHide page={page} pageReferance={pageReferance} />}
+                {showMore && <InPageNotificationPageMore />}
+                {showMute && <InPageNotificationPageMute page={page} pageReferance={pageReferance} />}
+                {showHide && <InPageNotificationPageHide page={page} pageReferance={pageReferance} />}
             </div>
         </>
     );
 };
 
-const InpagenotificationPageMore = () => {
+const InPageNotificationPageMore = () => {
     const seeMore = (event: React.MouseEvent<HTMLElement>) => {
         event.preventDefault();
         const categoryHeader = event.currentTarget as HTMLElement;
@@ -72,13 +74,17 @@ const InpagenotificationPageMore = () => {
     );
 };
 
-const InpagenotificationPageMute = ({ page, pageReferance }: IInpagenotificationPage & IInpagenotificationPageMenu) => {
+const InPageNotificationPageMute = ({ page, pageReferance }: IInPageNotificationPage & IInPageNotificationPageMenu) => {
     const mutePage = () => {
-        const storedPage = LocalStorage.readPage(page.pageId);
+        const notifyUpdatePayload = {
+            pageId: page.pageId,
+            action: 'mute',
+        };
 
-        storedPage.timestamp = Date.now();
-
-        LocalStorage.writePage(storedPage);
+        void browser.runtime.sendMessage({
+            type: 'notifyUpdate',
+            payload: notifyUpdatePayload,
+        });
 
         if (pageReferance) {
             pageReferance.current?.remove();
@@ -93,12 +99,17 @@ const InpagenotificationPageMute = ({ page, pageReferance }: IInpagenotification
     );
 };
 
-const InpagenotificationPageHide = ({ page, pageReferance }: IInpagenotificationPage & IInpagenotificationPageMenu) => {
+const InPageNotificationPageHide = ({ page, pageReferance }: IInPageNotificationPage & IInPageNotificationPageMenu) => {
     const hidePage = () => {
-        const storedPage = LocalStorage.readPage(page.pageId);
+        const notifyUpdatePayload = {
+            pageId: page.pageId,
+            action: 'hide',
+        };
 
-        storedPage.dismissed = page.pageTitle; // TODO: Replace pageTitle with revision/timestamp
-        LocalStorage.writePage(storedPage);
+        void browser.runtime.sendMessage({
+            type: 'notifyUpdate',
+            payload: notifyUpdatePayload,
+        });
 
         if (pageReferance) {
             pageReferance.current?.remove();
@@ -113,61 +124,49 @@ const InpagenotificationPageHide = ({ page, pageReferance }: IInpagenotification
     );
 };
 
-const InpagenotificationPageInfo = ({ page }: IInpagenotificationPage) => {
+const InPageNotificationPageInfo = ({ page }: IInPageNotificationPage) => {
     return (
         <>
-            <div className="page-info hidden">{page.popupText}</div>
+            <div className="page-info hidden">{page.description}</div>
         </>
     );
 };
 
-const InpagenotificationPageLink = ({ page }: IInpagenotificationPage) => {
+const InPageNotificationPageLink = ({ page }: IInPageNotificationPage) => {
     return (
         <>
             <a href={page.url()} target="_blank">
-                {page.pageTitle}
+                {page.pageName}
             </a>
         </>
     );
 };
 
-const InpagenotificationPage = ({ page }: IInpagenotificationPage) => {
+const InPageNotificationPage = ({ page }: IInPageNotificationPage) => {
     const componentReferance = React.createRef<HTMLParagraphElement>();
 
     const showMore = true; // TODO, should come from an option?
     const showMute = true; // TODO, should come from an option?
     const showHide = true; // TODO, should come from an option?
 
-    const storedPage = LocalStorage.readPage(page.pageId);
-    let showPage = Date.now() > storedPage.timestamp + 60 * 60 * 1000; // curent mute 1 hour, TODO: should come from an option.
-
-    // TODO: Replace pageTitle with revision/timestamp
-    if (storedPage.dismissed == page.pageTitle) {
-        showPage = false;
-    }
-
-    if (showPage) {
-        return (
-            <>
-                <div className="page" ref={componentReferance}>
-                    <InpagenotificationPageMenu
-                        page={page}
-                        showMore={showMore}
-                        showMute={showMute}
-                        showHide={showHide}
-                        pageReferance={componentReferance}
-                    />
-                    <InpagenotificationPageLink page={page} />
-                    {showMore && <InpagenotificationPageInfo page={page} />}
-                </div>
-            </>
-        );
-    } else {
-        return <></>;
-    }
+    return (
+        <>
+            <div className="page" ref={componentReferance}>
+                <InPageNotificationPageMenu
+                    page={page}
+                    showMore={showMore}
+                    showMute={showMute}
+                    showHide={showHide}
+                    pageReferance={componentReferance}
+                />
+                <InPageNotificationPageLink page={page} />
+                {showMore && <InPageNotificationPageInfo page={page} />}
+            </div>
+        </>
+    );
 };
 
-const InpagenotificationMessage = ({ message }: IInpagenotificationMessage) => {
+const InPageNotificationMessage = ({ message }: IInPageNotificationMessage) => {
     if (message && message.length > 0) {
         return (
             <>
@@ -179,12 +178,12 @@ const InpagenotificationMessage = ({ message }: IInpagenotificationMessage) => {
     }
 };
 
-const InpagenotificationCategory = ({ pages }: IInpagenotificationCategory) => {
+const InPageNotificationCategory = ({ pages }: IInPageNotificationCategory) => {
     const categoryTitle = pages[0];
     const pagesList = pages[1];
 
     if (categoryTitle && pagesList) {
-        const cattegoryPages = pagesList.map((page, index) => <InpagenotificationPage key={index} page={page} />);
+        const cattegoryPages = pagesList.map((page, index) => <InPageNotificationPage key={index} page={page} />);
 
         const toggleCategory = (event: React.MouseEvent<HTMLElement>) => {
             event.preventDefault();
@@ -215,7 +214,7 @@ const InpagenotificationCategory = ({ pages }: IInpagenotificationCategory) => {
     }
 };
 
-const Inpagenotification = ({ containerId, message, pages }: IInpagenotification) => {
+const InPageNotification = ({ containerId, message, pages }: IInPageNotification) => {
     /**
      * timeout even for hiding the notification after a set time
      *
@@ -258,17 +257,31 @@ const Inpagenotification = ({ containerId, message, pages }: IInpagenotification
         }
     };
 
-    const _pages = new Map<string, PageEntry[]>();
+    const _pages = {
+        Company: [] as CompanyPage[],
+        Incident: [] as IncidentPage[],
+        Product: [] as ProductPage[],
+        ProductLine: [] as ProductLinePage[],
+    };
+
     pages.forEach((page) => {
-        if (!_pages.has(page.category)) {
-            _pages.set(page.category, []);
+        if (page.articleType == ArticleType.Company) {
+            _pages.Company.push(CompanyPage.fromJSON(page as unknown as ICompanyPage));
         }
-        _pages.get(page.category)?.push(new PageEntry(page));
+        if (page.articleType == ArticleType.Incident) {
+            _pages.Incident.push(IncidentPage.fromJSON(page as unknown as IIncidentPage));
+        }
+        if (page.articleType == ArticleType.Product) {
+            _pages.Product.push(ProductPage.fromJSON(page as unknown as IProductPage));
+        }
+        if (page.articleType == ArticleType.ProductLine) {
+            _pages.ProductLine.push(ProductLinePage.fromJSON(page as unknown as IProductLinePage));
+        }
     });
 
-    const inpagenotificationCategorysPages = [..._pages].map((pages, index) => (
-        <InpagenotificationCategory key={index} pages={pages} />
-    ));
+    const InPageNotificationCategorysPages = Object.entries(_pages).map(([category, categoryPages], index) => {
+        if (categoryPages.length) return <InPageNotificationCategory key={index} pages={[category, categoryPages]} />;
+    });
 
     return (
         <>
@@ -463,12 +476,12 @@ const Inpagenotification = ({ containerId, message, pages }: IInpagenotification
                             <strong>Consumer Rights Wiki</strong>
                         </span>
                     </a>
-                    <InpagenotificationMessage message={message} />
-                    <div className="categorys">{inpagenotificationCategorysPages}</div>
+                    <InPageNotificationMessage message={message} />
+                    <div className="categorys">{InPageNotificationCategorysPages}</div>
                 </div>
             </div>
         </>
     );
 };
 
-export default Inpagenotification;
+export default InPageNotification;
