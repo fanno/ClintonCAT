@@ -88,9 +88,9 @@
         }
     },
     "DISMISS_TIME_LABEL": {
-        "message": "Dismiss time, $houers$ houers",
+        "message": "Dismiss time, $hours$ hours",
         "placeholders": {
-            "houers": {
+            "hours": {
                 "content": "$1"
             }
         }

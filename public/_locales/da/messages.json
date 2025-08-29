@@ -88,9 +88,9 @@
         }
     },
     "DISMISS_TIME_LABEL": {
-        "message": "Skjul tid, $houers$ timer",
+        "message": "Skjul tid, $hours$ timer",
         "placeholders": {
-            "houers": {
+            "hours": {
                 "content": "$1"
             }
         }
