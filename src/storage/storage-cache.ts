@@ -2,6 +2,11 @@ import { ICargoExport, PagesDB } from '@/database';
 import { Page } from '@/models/page';
 import browser from 'webextension-polyfill';
 
+import Preferences from '@/common/services/preferences';
+import BrowserLocalStorage from '@/storage/browser/browser-local-storage';
+import BrowserSyncStorage from '@/storage/browser/browser-sync-storage';
+import { z } from 'zod';
+
 class StorageCache {
     static readonly UPDATE_ALARM_NAME: string = 'updatePagesDB';
     static readonly CACHE_KEY: string = 'cachedPagesDB';
@@ -12,6 +17,7 @@ class StorageCache {
     private pagesDb: PagesDB;
     constructor(pagesDb: PagesDB) {
         this.pagesDb = pagesDb;
+        Preferences.initDefaults(new BrowserSyncStorage(), new BrowserLocalStorage());
         // Alarm to trigger periodic updates
         browser.alarms.create(StorageCache.UPDATE_ALARM_NAME, {
             periodInMinutes: StorageCache.FETCH_INTERVAL_MINUTES,
@@ -29,6 +35,10 @@ class StorageCache {
     }
 
     async isCacheStale(epoch = Date.now()) {
+        const autoUpdate = await Preferences.getPreference(Preferences.AUTO_UPDATE_PAGESDB_KEY);
+
+        if (!autoUpdate) return false;
+
         // Get the last update timestamp
         const { [StorageCache.CACHE_TIMESTAMP_KEY]: lastUpdated } = await browser.storage.local.get(
             StorageCache.CACHE_TIMESTAMP_KEY
@@ -52,16 +62,78 @@ class StorageCache {
         try {
             const now = Date.now();
             const needsUpdate = force || (await this.isCacheStale(now));
+
+            let cacheLoaded = false;
+
             if (!needsUpdate) {
                 console.log('Skipping update: Cache TTL not reached.');
+
+                const schemaCompanyCargo = z.object({
+                    PageID: z.string(),
+                    PageName: z.string(),
+                    Industry: z.string(),
+                    ParentCompany: z.string(),
+                    Type: z.string(),
+                    Website: z.string(),
+                });
+
+                const schemaIncidentCargo = z.object({
+                    PageID: z.string(),
+                    PageName: z.string(),
+                    Company: z.string(),
+                    Description: z.string(),
+                    EndDate: z.string(),
+                    Product: z.string(),
+                    ProductLine: z.string(),
+                    StartDate: z.string(),
+                    Status: z.string(),
+                    Type: z.string(),
+                });
+
+                const schemaProductCargo = z.object({
+                    PageID: z.string(),
+                    PageName: z.string(),
+                    Category: z.string(),
+                    Company: z.string(),
+                    Description: z.string(),
+                    ProductLine: z.string(),
+                    Website: z.string(),
+                });
+
+                const schemaProductLine = z.object({
+                    PageID: z.string(),
+                    PageName: z.string(),
+                    Category: z.string(),
+                    Company: z.string(),
+                    Description: z.string(),
+                    Website: z.string(),
+                });
+
+                const schemaCargoExport = z.object({
+                    Company: z.array(schemaCompanyCargo),
+                    Incident: z.array(schemaIncidentCargo),
+                    Product: z.array(schemaProductCargo),
+                    ProductLine: z.array(schemaProductLine),
+                });
+
+                const JsonDataCache = (await this.getCachedPagesDB()) as unknown as ICargoExport;
+
+                const checkCacheIntegrety = schemaCargoExport.safeParse(JsonDataCache);
+                if (checkCacheIntegrety.success) {
+                    console.log('Loading from cache...');
+                    this.pagesDb.setPages(JsonDataCache);
+                    cacheLoaded = true;
+                }
             }
 
-            console.log('Fetching updated pages database...');
-            const jsonData: string = await this.fetchJson(PagesDB.PAGES_DB_JSON_URL);
-            await this.saveCache(jsonData, now);
-            console.log(jsonData);
-            this.pagesDb.setPages(jsonData as unknown as ICargoExport);
+            if (!cacheLoaded) {
+                console.log('Fetching updated pages database...');
+                const jsonData: string = await this.fetchJson(PagesDB.PAGES_DB_JSON_URL);
+                await this.saveCache(jsonData, now);
+                console.log(jsonData);
 
+                this.pagesDb.setPages(jsonData as unknown as ICargoExport);
+            }
             console.log('Pages database updated successfully.');
         } catch (error: unknown) {
             if (error instanceof Error) {
@@ -75,6 +147,7 @@ class StorageCache {
     // Function to get the cached pages database
     async getCachedPagesDB(): Promise<Page[]> {
         const { [StorageCache.CACHE_KEY]: pagesDb } = await browser.storage.local.get(StorageCache.CACHE_KEY);
+        console.log('StorageCache', pagesDb);
         return (pagesDb as Page[] | undefined) ?? [];
     }
 

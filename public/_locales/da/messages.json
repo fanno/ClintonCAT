@@ -69,5 +69,17 @@
     },
     "GO_TO_OPTIONS": {
         "message": "Gå til indstillinger"
+    },
+    "DATABASE_SETTINGS": {
+        "message": "Wiki database indstillinger"
+    },
+    "PAGES_DATABASE_UPDATE": {
+        "message": "Opdater manuelt"
+    },
+    "UPDATE_NOW": {
+        "message": "Opdater nu"
+    },
+    "AUTO_UPDATE_PAGESDB": {
+        "message": "Automatisk opdatering"
     }
 }

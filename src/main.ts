@@ -210,6 +210,18 @@ export class Main {
     }
 
     /**
+     * Called when a page (tab) has finished loading.
+     * Scans the domain and in-page contents, merges results,
+     * and indicates how many CAT pages were found.
+     */
+    onOptions(action: string) {
+        if (action == 'pageDB.update') {
+            this.storageCache.updatePagesDB(true);
+        }
+        return;
+    }
+
+    /**
      * Called when the extension is installed.
      * Initializes default settings and indicates current status.
      */

@@ -10,10 +10,13 @@ class Preferences {
     static readonly PAGE_NOTIFICATIONS_ENABLED_KEY = 'page_notifications_enabled';
     static readonly DEFAULT_DOMAIN_EXCLUSIONS = ['rossmanngroup.com'];
 
+    static readonly AUTO_UPDATE_PAGESDB_KEY = 'auto_update_pagesdb';
+
     static isEnabled = new ObservableValue<boolean>(true);
     static domainExclusions = new ObservableSet<string>();
     static browserNotificationsEnabled = new ObservableValue<boolean>(true);
     static pageNotificationsEnabled = new ObservableValue<boolean>(true);
+    static autoUpdateDB = new ObservableValue<boolean>(true);
 
     // Injected storage backends  (TODO: do we need both?)
     // Sync is used to share data across browsers if logged in, e.g. plugin settings
@@ -42,6 +45,7 @@ class Preferences {
         this.domainExclusions.removeAllListeners();
         this.browserNotificationsEnabled.removeAllListeners();
         this.pageNotificationsEnabled.removeAllListeners();
+        this.autoUpdateDB.removeAllListeners();
 
         // Set up default callbacks
         this.isEnabled.addListener(this.IS_ENABLED_KEY, (result: boolean) => {
@@ -58,6 +62,10 @@ class Preferences {
 
         this.pageNotificationsEnabled.addListener(this.PAGE_NOTIFICATIONS_ENABLED_KEY, (result: boolean) => {
             void this.setPreference(Preferences.PAGE_NOTIFICATIONS_ENABLED_KEY, result);
+        });
+
+        this.autoUpdateDB.addListener(this.AUTO_UPDATE_PAGESDB_KEY, (result: boolean) => {
+            void this.setPreference(Preferences.AUTO_UPDATE_PAGESDB_KEY, result);
         });
 
         // Attempt preference retrieval
@@ -89,6 +97,13 @@ class Preferences {
         } else {
             this.pageNotificationsEnabled.value = true;
         }
+
+        const rawAutoUpdatePagesDB = await this.getPreference(this.AUTO_UPDATE_PAGESDB_KEY);
+        if (typeof rawAutoUpdatePagesDB === 'boolean') {
+            this.autoUpdateDB.value = rawAutoUpdatePagesDB;
+        } else {
+            this.autoUpdateDB.value = true;
+        }
     }
 
     public static dump(): void {
@@ -96,7 +111,8 @@ class Preferences {
             `IsEnabled = ${Preferences.isEnabled.toString()}, ` +
             `DomainExclusions = ${Preferences.domainExclusions.toString()}, ` +
             `BrowserNotificationsEnabled = ${Preferences.browserNotificationsEnabled.toString()}, ` +
-            `PageNotificationsEnabled = ${Preferences.pageNotificationsEnabled.toString()}`;
+            `PageNotificationsEnabled = ${Preferences.pageNotificationsEnabled.toString()}, ` +
+            `autoUpdateDB = ${Preferences.autoUpdateDB.toString()}`;
         console.log(msg);
     }
 

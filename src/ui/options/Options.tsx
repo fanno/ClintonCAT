@@ -24,6 +24,8 @@ const Options = () => {
                     setItems([...result])
                 );
                 setItems([...Preferences.domainExclusions.value]);
+
+                setAutoUpdateDB(Preferences.autoUpdateDB.value);
             })
             .catch((error: unknown) => console.error('Failed to initialize preferences:', error));
 
@@ -53,6 +55,23 @@ const Options = () => {
     const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
         event.preventDefault();
         addItem();
+    };
+
+    const updatePagesDB = () => {
+        const payload = {
+            action: 'pageDB.update',
+        };
+
+        void browser.runtime.sendMessage({
+            type: 'optionsAction',
+            payload: payload,
+        });
+    };
+
+    const [autoUpdateDB, setAutoUpdateDB] = useState(true);
+    const toggleAutoUpdateDB = () => {
+        setAutoUpdateDB(!autoUpdateDB);
+        Preferences.autoUpdateDB.value = Boolean(!autoUpdateDB);
     };
 
     return (
@@ -104,6 +123,28 @@ const Options = () => {
                             <input type="checkbox" />
                             <span className={styles.toggleSlider} />
                         </label>
+                    </div>
+                </div>
+
+                <div className={styles.settingsColumn}>
+                    <h2 className={styles.columnTitle}>{t('DATABASE_SETTINGS')}</h2>
+                    <div className={styles.settingsContainer}>
+                        <p>{t('PAGES_DATABASE_UPDATE')}</p>
+                        <label className={styles.toggleLabel}>
+                            <button
+                                type="button"
+                                onClick={updatePagesDB}
+                                className={classNames(styles.btn, styles.clearBtn)}>
+                                {t('UPDATE_NOW')}
+                            </button>
+                        </label>
+                        <div className={styles.settingsContainer}>
+                            <label className={styles.toggleLabel}>
+                                <span>{t('AUTO_UPDATE_PAGESDB')}</span>
+                                <input type="checkbox" onClick={toggleAutoUpdateDB} checked={autoUpdateDB} />
+                                <span className={styles.toggleSlider} />
+                            </label>
+                        </div>
                     </div>
                 </div>
             </div>
