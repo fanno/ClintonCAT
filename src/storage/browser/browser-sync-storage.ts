@@ -17,7 +17,7 @@ class BrowserSyncStorage implements IStorageBackend {
         try {
             if (currentValue != value) {
                 const toStore = JSON.stringify(value);
-                if (this.checkQue()) {
+                if (this.checkQueue()) {
                     this.buffer.set(key, toStore);
 
                     console.log(`BrowserSyncStorage.set Added to buffer: ${key} = ${toStore}`);
@@ -83,7 +83,7 @@ class BrowserSyncStorage implements IStorageBackend {
     }
 
     async remove(key: string): Promise<void> {
-        if (this.checkQue()) {
+        if (this.checkQueue()) {
             this.buffer.delete(key);
             this.removals.push(key);
 
@@ -133,7 +133,7 @@ class BrowserSyncStorage implements IStorageBackend {
         }, delay);
     }
 
-    private checkQue(): boolean {
+    private checkQueue(): boolean {
         const now = Date.now();
 
         this.timestamps.add(now);
