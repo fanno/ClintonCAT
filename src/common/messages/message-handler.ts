@@ -34,7 +34,7 @@ const notifyHandler: MessageHandler<'notify'> = async (payload, _context) => {
 const pageInfoHandler: MessageHandler<'pageInfo'> = (payload, context) => {
     return new Promise((resolve, reject) => {
         console.log('Page Info Received, triggering page load handler:', payload);
-        context.main.onPageLoaded(payload.domain, payload.url).then(resolve).catch(reject);
+        context.main.onPageLoaded(payload.domain, payload.url, payload.innerText).then(resolve).catch(reject);
     });
 };
 

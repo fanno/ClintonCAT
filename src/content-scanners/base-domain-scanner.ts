@@ -1,6 +1,9 @@
 import { IContentScannerPlugin, IScanParameters } from '@/common/services/content-scanner.types';
 import { CATWikiPageSearchResults } from '@/database';
 
+import Flexisearch from 'flexsearch';
+import pagesDbJsonFile from '../../data/pages_db.json'; // assert { type: 'json' };
+
 export abstract class BaseDomainScanner implements IContentScannerPlugin {
     abstract metaInfo(): string;
     abstract canScanContent(params: IScanParameters): boolean;
@@ -97,6 +100,117 @@ export abstract class BaseDomainScanner implements IContentScannerPlugin {
                 ) || foundAnyPages;
         } else {
             console.log(`${scannerId}: No specific entity extracted from URL, skipping entity-based searches.`);
+        }
+
+        if (params.innerText) {
+            const lines = params.innerText.split('\n');
+            const index = new Flexisearch.Index();
+
+            let c = 1;
+            lines.forEach((line) => {
+                if (line.length > 20) {
+                    //console.log('Line:', line);
+                    index.add(c, line);
+                    c++;
+                }
+            });
+
+            const indexResults = index.search('HERO12 Black');
+            console.log('Flexisearch:Index', indexResults);
+
+            /*
+            const doc = new Flexisearch.Document({
+                document: {
+                    id: 'id',
+                    index: 'content',
+                },
+            });
+            */
+
+            const doc = new Flexisearch.Document({
+                document: {
+                    id: 'PageID',
+                    index: [
+                        {
+                            field: 'Description',
+                            tokenize: 'forward',
+                        },
+                        {
+                            field: 'PageName',
+                            tokenize: 'forward',
+                        },
+                        {
+                            field: 'Company',
+                            tokenize: 'forward',
+                        },
+                    ],
+                    store: true,
+                },
+            });
+
+            for (let y = 0, record; y < pagesDbJsonFile.Company.length; y++) {
+                record = pagesDbJsonFile.Company[y];
+                doc.add(record);
+            }
+            for (let y = 0, record; y < pagesDbJsonFile.Incident.length; y++) {
+                record = pagesDbJsonFile.Incident[y];
+                doc.add(record);
+            }
+            for (let y = 0, record; y < pagesDbJsonFile.Product.length; y++) {
+                record = pagesDbJsonFile.Product[y];
+                doc.add(record);
+            }
+            for (let y = 0, record; y < pagesDbJsonFile.ProductLine.length; y++) {
+                record = pagesDbJsonFile.ProductLine[y];
+                doc.add(record);
+            }
+
+            //const docResults = doc.search('HERO12 Black');
+            //let search = 'HERO12 Black';
+            //search = 'Amazon';
+            /*
+            const rank = (resultSet: unknown) => {
+                const resultMap = new Map();
+                resultSet.forEach((result) => {
+                    let docs = result.result;
+                    docs.forEach((doc) => {
+                        let currentVal = resultMap.get(doc.id);
+                        if (!currentVal) {
+                            currentVal = {
+                                score: 1,
+                                doc: doc.doc,
+                            };
+                            resultMap.set(doc.id, currentVal);
+                        } else {
+                            // More fields matching means a higher score/rank
+                            currentVal.score++;
+                        }
+                    });
+                });
+                // Sort the map based on the score property
+                return new Map(
+                    [...resultMap].sort((a, b) => {
+                        return b[1].score - a[1].score;
+                    })
+                );
+            };
+            */
+
+            lines.forEach((line) => {
+                if (line.length > 20) {
+                    const docResults = doc.search(line, {
+                        index: ['Description', 'PageName', 'Company'],
+                        limit: 3,
+                        suggest: true,
+                        enrich: true,
+                    });
+                    if (docResults.length > 0) {
+                        console.log('Flexisearch:Document', line, docResults);
+                    } else {
+                        //console.log('Flexisearch:Document', line);
+                    }
+                }
+            });
         }
 
         const uniquePageIds = new Set<number>();

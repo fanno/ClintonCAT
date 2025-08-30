@@ -6,6 +6,7 @@ DOMMessenger.registerMessageListener();
 const pageInfoPayload = {
     domain: window.location.hostname,
     url: window.location.href,
+    innerText: document.body.innerText,
 };
 
 void browser.runtime.sendMessage({

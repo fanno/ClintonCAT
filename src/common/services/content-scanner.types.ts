@@ -11,6 +11,7 @@ export interface IScanParameters {
     domain: string;
     mainDomain: string;
     url: string;
+    innerText: string;
     pagesDb: PagesDB;
     dom: IDOMMessengerInterface;
     notify: (result: CATWikiPageSearchResults) => void;

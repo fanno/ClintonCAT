@@ -73,6 +73,7 @@
     },
     "dependencies": {
         "classnames": "^2.5.1",
+        "flexsearch": "^0.8.205",
         "tldts": "^6.1.79"
     }
 }

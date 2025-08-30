@@ -160,7 +160,7 @@ export class Main {
      * Scans the domain and in-page contents, merges results,
      * and indicates how many CAT pages were found.
      */
-    async onPageLoaded(unparsedDomain: string, url: string): Promise<void> {
+    async onPageLoaded(unparsedDomain: string, url: string, innerText: string): Promise<void> {
         if (!parse(unparsedDomain, { allowPrivateDomains: true }).domain) {
             throw new Error('onPageLoaded received an invalid url');
         }
@@ -179,6 +179,7 @@ export class Main {
             domain: domain.toLowerCase(),
             mainDomain: getDomainWithoutSuffix(unparsedDomain, { allowPrivateDomains: true }) ?? '',
             url: url,
+            innerText: innerText,
             pagesDb: this.pagesDatabase,
             dom: new DOMMessenger(),
             notify: (results) => this.indicateCATPages(results, domMessenger),

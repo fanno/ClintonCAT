@@ -11,7 +11,7 @@ import type { Main } from '@/main';
 export interface MessageMap {
     log: [{ message: string }];
     notify: [{ title: string; message: string }];
-    pageInfo: [{ domain: string; url: string }];
+    pageInfo: [{ domain: string; url: string; innerText: string }];
     notifyUpdate: [{ pageId: number; action: string }];
 }
 export interface MessageHandlerContext {
