@@ -167,7 +167,7 @@ const Options = () => {
                                     className={styles.slider}
                                     list="autohide-data"
                                 />
-                                <datalist id="autohide-data">
+                                <datalist className={styles.sliderDatalist} id="autohide-data">
                                     <option value="0" label={t('OFF')}></option>
                                     <option value="30" label={t('30')}></option>
                                 </datalist>
@@ -188,7 +188,7 @@ const Options = () => {
                                     className={styles.slider}
                                     list="dismisstime-data"
                                 />
-                                <datalist id="dismisstime-data">
+                                <datalist className={styles.sliderDatalist} id="dismisstime-data">
                                     <option value="1" label="1"></option>
                                     <option value="48" label="48"></option>
                                 </datalist>

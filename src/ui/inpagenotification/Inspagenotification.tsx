@@ -22,7 +22,7 @@ export interface IInPageNotificationPageOptions {
 }
 
 export interface IInPageNotificationPageMenu {
-    pageReferance: React.RefObject<HTMLParagraphElement | null>;
+    pageReference: React.RefObject<HTMLParagraphElement | null>;
 }
 
 export interface IInPageNotificationMessage {
@@ -42,15 +42,15 @@ export interface IInPageNotification {
 
 const InPageNotificationPageMenu = ({
     page,
-    pageReferance,
+    pageReference,
     options,
 }: IInPageNotificationPage & IInPageNotificationPageMenu & IInPageNotificationPageOptions) => {
     return (
         <>
             <div className="page-menu">
                 {options.showMore && <InPageNotificationPageMore />}
-                {options.showMute && <InPageNotificationPageMute page={page} pageReferance={pageReferance} />}
-                {options.showHide && <InPageNotificationPageHide page={page} pageReferance={pageReferance} />}
+                {options.showMute && <InPageNotificationPageMute page={page} pageReference={pageReference} />}
+                {options.showHide && <InPageNotificationPageHide page={page} pageReference={pageReference} />}
             </div>
         </>
     );
@@ -78,7 +78,7 @@ const InPageNotificationPageMore = () => {
     );
 };
 
-const InPageNotificationPageMute = ({ page, pageReferance }: IInPageNotificationPage & IInPageNotificationPageMenu) => {
+const InPageNotificationPageMute = ({ page, pageReference }: IInPageNotificationPage & IInPageNotificationPageMenu) => {
     const mutePage = () => {
         const notifyUpdatePayload = {
             pageId: page.pageId,
@@ -90,8 +90,8 @@ const InPageNotificationPageMute = ({ page, pageReferance }: IInPageNotification
             payload: notifyUpdatePayload,
         });
 
-        if (pageReferance) {
-            pageReferance.current?.remove();
+        if (pageReference) {
+            pageReference.current?.remove();
         }
     };
     return (
@@ -103,7 +103,7 @@ const InPageNotificationPageMute = ({ page, pageReferance }: IInPageNotification
     );
 };
 
-const InPageNotificationPageHide = ({ page, pageReferance }: IInPageNotificationPage & IInPageNotificationPageMenu) => {
+const InPageNotificationPageHide = ({ page, pageReference }: IInPageNotificationPage & IInPageNotificationPageMenu) => {
     const hidePage = () => {
         const notifyUpdatePayload = {
             pageId: page.pageId,
@@ -115,8 +115,8 @@ const InPageNotificationPageHide = ({ page, pageReferance }: IInPageNotification
             payload: notifyUpdatePayload,
         });
 
-        if (pageReferance) {
-            pageReferance.current?.remove();
+        if (pageReference) {
+            pageReference.current?.remove();
         }
     };
     return (
@@ -152,7 +152,7 @@ const InPageNotificationPage = ({ page, options }: IInPageNotificationPage & IIn
     return (
         <>
             <div className="page" ref={componentReferance}>
-                <InPageNotificationPageMenu page={page} options={options} pageReferance={componentReferance} />
+                <InPageNotificationPageMenu page={page} options={options} pageReference={componentReferance} />
                 <InPageNotificationPageLink page={page} />
                 {options.showMore && <InPageNotificationPageInfo page={page} />}
             </div>

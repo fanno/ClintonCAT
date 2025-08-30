@@ -197,7 +197,7 @@
   cursor: pointer;
 }
 
-datalist {
+.sliderDatalist {
   display: flex;
   justify-content: space-between;
   writing-mode: lr;
