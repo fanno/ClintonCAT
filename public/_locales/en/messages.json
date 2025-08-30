@@ -11,6 +11,14 @@
     "EXCLUDED_DOMAINS": {
         "message": "Excluded Domains"
     },
+    "DOMAIN_NOT_VALID": {
+        "message": "$domainInput$ is not a valid domain",
+        "placeholders": {
+            "domainInput": {
+                "content": "$1"
+            }
+        }
+    },
     "ADD": {
         "message": "ADD"
     },
@@ -81,5 +89,51 @@
                 "content": "$1"
             }
         }
+    },
+    "SHOW_MORE_OPTION": {
+        "message": "Show more option"
+    },
+    "SHOW_MUTE_OPTION": {
+        "message": "Show mute option"
+    },
+    "SHOW_HIDE_OPTION": {
+        "message": "Show hide option"
+    },
+    "AUTOHIDE_LABEL": {
+        "message": "Autohide message, $seconds$ seconds",
+        "placeholders": {
+            "seconds": {
+                "content": "$1"
+            }
+        }
+    },
+    "DISMISS_TIME_LABEL": {
+        "message": "Dismiss time, $hours$ hours",
+        "placeholders": {
+            "hours": {
+                "content": "$1"
+            }
+        }
+    },
+    "OFF": {
+        "message": "OFF"
+    },
+    "30": {
+        "message": "30"
+    },
+    "IN_PAGE_SETTINGS": {
+        "message": "In page message settings"
+    },
+    "SHOW_COMPANY": {
+        "message": "Show company results"
+    },
+    "SHOW_INCIDENT": {
+        "message": "Show incedent results"
+    },
+    "SHOW_PRODUCT": {
+        "message": "Show product results"
+    },
+    "SHOW_PRODUCTLINE": {
+        "message": "Show productline results"
     }
 }

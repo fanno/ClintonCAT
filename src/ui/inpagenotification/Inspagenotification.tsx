@@ -10,14 +10,23 @@ export interface IInPageNotificationPage {
     page: Page;
 }
 
-export interface IInPageNotificationPageMenu {
-    pageReferance: React.RefObject<HTMLParagraphElement | null>;
-}
-
-export interface IInPageNotificationPageOptions {
+export interface IInPageNotificationOptions {
     showMore: boolean;
     showMute: boolean;
     showHide: boolean;
+    showCompany: boolean;
+    showIncident: boolean;
+    showProduct: boolean;
+    showProductLine: boolean;
+    autoHideTime: number;
+}
+
+export interface IInPageNotificationPageOptions {
+    options: IInPageNotificationOptions;
+}
+
+export interface IInPageNotificationPageMenu {
+    pageReference: React.RefObject<HTMLParagraphElement | null>;
 }
 
 export interface IInPageNotificationMessage {
@@ -32,21 +41,20 @@ export interface IInPageNotification {
     containerId: string;
     message: string;
     pages: IPage[];
+    options: IInPageNotificationOptions;
 }
 
 const InPageNotificationPageMenu = ({
     page,
-    pageReferance,
-    showMore,
-    showMute,
-    showHide,
+    pageReference,
+    options,
 }: IInPageNotificationPage & IInPageNotificationPageMenu & IInPageNotificationPageOptions) => {
     return (
         <>
             <div className="page-menu">
-                {showMore && <InPageNotificationPageMore />}
-                {showMute && <InPageNotificationPageMute page={page} pageReferance={pageReferance} />}
-                {showHide && <InPageNotificationPageHide page={page} pageReferance={pageReferance} />}
+                {options.showMore && <InPageNotificationPageMore />}
+                {options.showMute && <InPageNotificationPageMute page={page} pageReference={pageReference} />}
+                {options.showHide && <InPageNotificationPageHide page={page} pageReference={pageReference} />}
             </div>
         </>
     );
@@ -74,7 +82,7 @@ const InPageNotificationPageMore = () => {
     );
 };
 
-const InPageNotificationPageMute = ({ page, pageReferance }: IInPageNotificationPage & IInPageNotificationPageMenu) => {
+const InPageNotificationPageMute = ({ page, pageReference }: IInPageNotificationPage & IInPageNotificationPageMenu) => {
     const mutePage = () => {
         const notifyUpdatePayload = {
             pageId: page.pageId,
@@ -86,8 +94,8 @@ const InPageNotificationPageMute = ({ page, pageReferance }: IInPageNotification
             payload: notifyUpdatePayload,
         });
 
-        if (pageReferance) {
-            pageReferance.current?.remove();
+        if (pageReference) {
+            pageReference.current?.remove();
         }
     };
     return (
@@ -99,7 +107,7 @@ const InPageNotificationPageMute = ({ page, pageReferance }: IInPageNotification
     );
 };
 
-const InPageNotificationPageHide = ({ page, pageReferance }: IInPageNotificationPage & IInPageNotificationPageMenu) => {
+const InPageNotificationPageHide = ({ page, pageReference }: IInPageNotificationPage & IInPageNotificationPageMenu) => {
     const hidePage = () => {
         const notifyUpdatePayload = {
             pageId: page.pageId,
@@ -111,8 +119,8 @@ const InPageNotificationPageHide = ({ page, pageReferance }: IInPageNotification
             payload: notifyUpdatePayload,
         });
 
-        if (pageReferance) {
-            pageReferance.current?.remove();
+        if (pageReference) {
+            pageReference.current?.remove();
         }
     };
     return (
@@ -142,25 +150,15 @@ const InPageNotificationPageLink = ({ page }: IInPageNotificationPage) => {
     );
 };
 
-const InPageNotificationPage = ({ page }: IInPageNotificationPage) => {
+const InPageNotificationPage = ({ page, options }: IInPageNotificationPage & IInPageNotificationPageOptions) => {
     const componentReferance = React.createRef<HTMLParagraphElement>();
-
-    const showMore = true; // TODO, should come from an option?
-    const showMute = true; // TODO, should come from an option?
-    const showHide = true; // TODO, should come from an option?
 
     return (
         <>
             <div className="page" ref={componentReferance}>
-                <InPageNotificationPageMenu
-                    page={page}
-                    showMore={showMore}
-                    showMute={showMute}
-                    showHide={showHide}
-                    pageReferance={componentReferance}
-                />
+                <InPageNotificationPageMenu page={page} options={options} pageReference={componentReferance} />
                 <InPageNotificationPageLink page={page} />
-                {showMore && <InPageNotificationPageInfo page={page} />}
+                {options.showMore && <InPageNotificationPageInfo page={page} />}
             </div>
         </>
     );
@@ -178,12 +176,17 @@ const InPageNotificationMessage = ({ message }: IInPageNotificationMessage) => {
     }
 };
 
-const InPageNotificationCategory = ({ pages }: IInPageNotificationCategory) => {
+const InPageNotificationCategory = ({
+    pages,
+    options,
+}: IInPageNotificationCategory & IInPageNotificationPageOptions) => {
     const categoryTitle = pages[0];
     const pagesList = pages[1];
 
     if (categoryTitle && pagesList) {
-        const cattegoryPages = pagesList.map((page, index) => <InPageNotificationPage key={index} page={page} />);
+        const cattegoryPages = pagesList.map((page, index) => (
+            <InPageNotificationPage key={index} page={page} options={options} />
+        ));
 
         const toggleCategory = (event: React.MouseEvent<HTMLElement>) => {
             event.preventDefault();
@@ -214,18 +217,20 @@ const InPageNotificationCategory = ({ pages }: IInPageNotificationCategory) => {
     }
 };
 
-const InPageNotification = ({ containerId, message, pages }: IInPageNotification) => {
+const InPageNotification = ({ containerId, message, pages, options }: IInPageNotification) => {
     /**
      * timeout even for hiding the notification after a set time
      *
      * TODO: make the time a variable ?
      */
     const timeoutID = setTimeout(() => {
-        const container = document.getElementById(containerId);
-        if (container) {
-            container.remove();
+        if (options.autoHideTime > 0) {
+            const container = document.getElementById(containerId);
+            if (container) {
+                container.remove();
+            }
         }
-    }, 5000);
+    }, options.autoHideTime);
 
     const closeNotification = () => {
         const container = document.getElementById(containerId);
@@ -265,22 +270,23 @@ const InPageNotification = ({ containerId, message, pages }: IInPageNotification
     };
 
     pages.forEach((page) => {
-        if (page.articleType == ArticleType.Company) {
+        if (options.showCompany && page.articleType == ArticleType.Company) {
             _pages.Company.push(CompanyPage.fromJSON(page as unknown as ICompanyPage));
         }
-        if (page.articleType == ArticleType.Incident) {
+        if (options.showIncident && page.articleType == ArticleType.Incident) {
             _pages.Incident.push(IncidentPage.fromJSON(page as unknown as IIncidentPage));
         }
-        if (page.articleType == ArticleType.Product) {
+        if (options.showProduct && page.articleType == ArticleType.Product) {
             _pages.Product.push(ProductPage.fromJSON(page as unknown as IProductPage));
         }
-        if (page.articleType == ArticleType.ProductLine) {
+        if (options.showProductLine && page.articleType == ArticleType.ProductLine) {
             _pages.ProductLine.push(ProductLinePage.fromJSON(page as unknown as IProductLinePage));
         }
     });
 
     const InPageNotificationCategorysPages = Object.entries(_pages).map(([category, categoryPages], index) => {
-        if (categoryPages.length) return <InPageNotificationCategory key={index} pages={[category, categoryPages]} />;
+        if (categoryPages.length)
+            return <InPageNotificationCategory key={index} pages={[category, categoryPages]} options={options} />;
     });
 
     return (

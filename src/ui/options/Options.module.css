@@ -160,6 +160,7 @@
 .toggleLabel input:checked + .toggleSlider::before {
     transform: translateX(22px);
 }
+
 .sliderContainer {
   width: 100%;
 }

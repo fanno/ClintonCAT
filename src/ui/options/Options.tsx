@@ -25,6 +25,16 @@ const Options = () => {
                 );
                 setItems([...Preferences.domainExclusions.value]);
 
+                setInPageAutoHideTime(Preferences.pageNotificationsAutoHideTime.value);
+                setInPageDismissTime(Preferences.pageNotificationsDismissTime.value);
+                setInPageShowMore(Preferences.pageNotificationsShowMore.value);
+                setInPageShowMute(Preferences.pageNotificationsShowMute.value);
+                setInPageShowHide(Preferences.pageNotificationsShowHide.value);
+                setInPageShowCompany(Preferences.pageNotificationsShowCompany.value);
+                setInPageShowIncident(Preferences.pageNotificationsShowIncident.value);
+                setInPageShowProduct(Preferences.pageNotificationsShowProduct.value);
+                setInPageShowProductLine(Preferences.pageNotificationsShowProductLine.value);
+
                 setAutoUpdateDB(Preferences.autoUpdateDB.value);
                 setAutoUpdateIntervalDB(Preferences.autoUpdateIntervalDB.value);
             })
@@ -81,6 +91,66 @@ const Options = () => {
     };
     const setAutoUpdateIntervalDBSave = () => {
         Preferences.autoUpdateIntervalDB.value = autoUpdateIntervalDB;
+    };
+
+    const [inPageAutoHideTime, setInPageAutoHideTime] = useState(5);
+    const setInPageAutoHideTimeOnChange = (event: ChangeEvent<HTMLInputElement>) => {
+        setInPageAutoHideTime(Number(event.currentTarget.value));
+    };
+    const setInPageAutoHideTimeSave = () => {
+        Preferences.pageNotificationsAutoHideTime.value = Number(inPageAutoHideTime);
+    };
+
+    const [inPageDismissTime, setInPageDismissTime] = useState(1);
+    const setInPageDismissTimeOnChange = (event: ChangeEvent<HTMLInputElement>) => {
+        setInPageDismissTime(Number(event.currentTarget.value));
+        Preferences.pageNotificationsDismissTime.value = Number(event.currentTarget.value);
+    };
+
+    const setInPageDismissTimeSave = () => {
+        Preferences.pageNotificationsDismissTime.value = Number(inPageDismissTime);
+    };
+
+    const [inPageShowMore, setInPageShowMore] = useState(true);
+    const toggleInPageShowMore = () => {
+        setInPageShowMore(!inPageShowMore);
+        Preferences.pageNotificationsShowMore.value = Boolean(!inPageShowMore);
+    };
+
+    const [inPageShowMute, setInPageShowMute] = useState(true);
+    const toggleInPageShowMute = () => {
+        setInPageShowMute(!inPageShowMute);
+        Preferences.pageNotificationsShowMute.value = Boolean(!inPageShowMute);
+    };
+
+    const [inPageShowHide, setInPageShowHide] = useState(true);
+    const toggleInPageShowHide = () => {
+        setInPageShowHide(!inPageShowHide);
+        Preferences.pageNotificationsShowHide.value = Boolean(!inPageShowHide);
+    };
+
+    const [inPageShowCompany, setInPageShowCompany] = useState(true);
+    const toggleInPageShowCompany = () => {
+        setInPageShowCompany(!inPageShowCompany);
+        Preferences.pageNotificationsShowCompany.value = Boolean(!inPageShowCompany);
+    };
+
+    const [inPageShowIncident, setInPageShowIncident] = useState(true);
+    const toggleInPageShowIncident = () => {
+        setInPageShowIncident(!inPageShowIncident);
+        Preferences.pageNotificationsShowIncident.value = Boolean(!inPageShowIncident);
+    };
+
+    const [inPageShowProduct, setInPageShowProduct] = useState(true);
+    const toggleInPageShowProduct = () => {
+        setInPageShowProduct(!inPageShowProduct);
+        Preferences.pageNotificationsShowProduct.value = Boolean(!inPageShowProduct);
+    };
+
+    const [inPageShowProductLine, setInPageShowProductLine] = useState(true);
+    const toggleInPageShowProductLine = () => {
+        setInPageShowProductLine(!inPageShowProductLine);
+        Preferences.pageNotificationsShowProductLine.value = Boolean(!inPageShowProductLine);
     };
 
     return (
@@ -172,6 +242,92 @@ const Options = () => {
                                 <option value="7" label="7"></option>
                             </datalist>
                         </div>
+                    </div>
+                </div>
+                <div className={styles.settingsColumn}>
+                    <h2 className={styles.columnTitle}>{t('IN_PAGE_SETTINGS')}</h2>
+                    <div className={styles.settingsContainer}>
+                        <label className={styles.sliderLabel}>
+                            <span>{t('AUTOHIDE_LABEL', [inPageAutoHideTime.toString()])}</span>
+                            <div className={styles.slidecontainer}>
+                                <input
+                                    type="range"
+                                    value={inPageAutoHideTime}
+                                    min="0"
+                                    max="30"
+                                    onChange={setInPageAutoHideTimeOnChange}
+                                    onMouseUp={setInPageAutoHideTimeSave}
+                                    onTouchEnd={setInPageAutoHideTimeSave}
+                                    className={styles.slider}
+                                    list="autohide-data"
+                                />
+                                <datalist className={styles.sliderDatalist} id="autohide-data">
+                                    <option value="0" label={t('OFF')}></option>
+                                    <option value="30" label={t('30')}></option>
+                                </datalist>
+                            </div>
+                        </label>
+
+                        <label className={styles.sliderLabel}>
+                            <span>{t('DISMISS_TIME_LABEL', [inPageDismissTime.toString()])}</span>
+                            <div className={styles.slidecontainer}>
+                                <input
+                                    type="range"
+                                    value={inPageDismissTime}
+                                    min="1"
+                                    max="48"
+                                    onChange={setInPageDismissTimeOnChange}
+                                    onMouseUp={setInPageDismissTimeSave}
+                                    onTouchEnd={setInPageDismissTimeSave}
+                                    className={styles.slider}
+                                    list="dismisstime-data"
+                                />
+                                <datalist className={styles.sliderDatalist} id="dismisstime-data">
+                                    <option value="1" label="1"></option>
+                                    <option value="48" label="48"></option>
+                                </datalist>
+                            </div>
+                        </label>
+
+                        <label className={styles.toggleLabel}>
+                            <span>{t('SHOW_MORE_OPTION')}</span>
+                            <input type="checkbox" checked={inPageShowMore} onClick={toggleInPageShowMore} />
+                            <span className={styles.toggleSlider} />
+                        </label>
+                        <label className={styles.toggleLabel}>
+                            <span>{t('SHOW_MUTE_OPTION')}</span>
+                            <input type="checkbox" checked={inPageShowMute} onClick={toggleInPageShowMute} />
+                            <span className={styles.toggleSlider} />
+                        </label>
+                        <label className={styles.toggleLabel}>
+                            <span>{t('SHOW_HIDE_OPTION')}</span>
+                            <input type="checkbox" checked={inPageShowHide} onClick={toggleInPageShowHide} />
+                            <span className={styles.toggleSlider} />
+                        </label>
+                        <label className={styles.toggleLabel}>
+                            <span>{t('SHOW_COMPANY')}</span>
+                            <input type="checkbox" checked={inPageShowCompany} onClick={toggleInPageShowCompany} />
+                            <span className={styles.toggleSlider} />
+                        </label>
+                        <label className={styles.toggleLabel}>
+                            <span>{t('SHOW_INCIDENT')}</span>
+                            <input type="checkbox" checked={inPageShowIncident} onClick={toggleInPageShowIncident} />
+                            <span className={styles.toggleSlider} />
+                        </label>
+                        <label className={styles.toggleLabel}>
+                            <span>{t('SHOW_PRODUCT')}</span>
+                            <input type="checkbox" checked={inPageShowProduct} onClick={toggleInPageShowProduct} />
+                            <span className={styles.toggleSlider} />
+                        </label>
+                        <label className={styles.toggleLabel}>
+                            <span>{t('SHOW_PRODUCTLINE')}</span>
+                            <input
+                                type="checkbox"
+                                checked={inPageShowProductLine}
+                                onClick={toggleInPageShowProductLine}
+                            />
+                            <span className={styles.toggleSlider} />
+                        </label>
                     </div>
                 </div>
             </div>
