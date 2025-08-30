@@ -73,5 +73,13 @@
     },
     "AUTO_UPDATE_PAGESDB": {
         "message": "Automatic update"
+    },
+    "PAGES_DATABASE_UPDATE_INTERVAL": {
+        "message": "Updating every $days$ days",
+        "placeholders": {
+            "days": {
+                "content": "$1"
+            }
+        }
     }
 }

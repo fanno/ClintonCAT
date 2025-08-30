@@ -35,7 +35,10 @@ class StorageCache {
     }
 
     async isCacheStale(epoch = Date.now()) {
-        const autoUpdate = await Preferences.getPreference(Preferences.AUTO_UPDATE_PAGESDB_KEY);
+        const autoUpdate = (await Preferences.getPreference(Preferences.AUTO_UPDATE_PAGESDB_KEY)) as boolean;
+        let autoUpdateInterval = (await Preferences.getPreference(
+            Preferences.AUTO_UPDATE_PAGESDB_INTERVAL_KEY
+        )) as number;
 
         if (!autoUpdate) return false;
 
@@ -47,7 +50,9 @@ class StorageCache {
         if (!lastUpdated) {
             return true;
         }
-        return epoch - (lastUpdated as number) >= StorageCache.FETCH_INTERVAL_MS;
+        autoUpdateInterval = autoUpdateInterval * 24 * 60 * 60 * 1000;
+
+        return epoch - (lastUpdated as number) >= autoUpdateInterval;
     }
 
     async saveCache(data: string, timestamp: number = Date.now()) {
@@ -67,74 +72,26 @@ class StorageCache {
 
             if (!needsUpdate) {
                 console.log('Skipping update: Cache TTL not reached.');
-
-                const schemaCompanyCargo = z.object({
-                    PageID: z.string(),
-                    PageName: z.string(),
-                    Industry: z.string(),
-                    ParentCompany: z.string(),
-                    Type: z.string(),
-                    Website: z.string(),
-                });
-
-                const schemaIncidentCargo = z.object({
-                    PageID: z.string(),
-                    PageName: z.string(),
-                    Company: z.string(),
-                    Description: z.string(),
-                    EndDate: z.string(),
-                    Product: z.string(),
-                    ProductLine: z.string(),
-                    StartDate: z.string(),
-                    Status: z.string(),
-                    Type: z.string(),
-                });
-
-                const schemaProductCargo = z.object({
-                    PageID: z.string(),
-                    PageName: z.string(),
-                    Category: z.string(),
-                    Company: z.string(),
-                    Description: z.string(),
-                    ProductLine: z.string(),
-                    Website: z.string(),
-                });
-
-                const schemaProductLine = z.object({
-                    PageID: z.string(),
-                    PageName: z.string(),
-                    Category: z.string(),
-                    Company: z.string(),
-                    Description: z.string(),
-                    Website: z.string(),
-                });
-
-                const schemaCargoExport = z.object({
-                    Company: z.array(schemaCompanyCargo),
-                    Incident: z.array(schemaIncidentCargo),
-                    Product: z.array(schemaProductCargo),
-                    ProductLine: z.array(schemaProductLine),
-                });
-
                 const JsonDataCache = (await this.getCachedPagesDB()) as unknown as ICargoExport;
 
-                const checkCacheIntegrety = schemaCargoExport.safeParse(JsonDataCache);
-                if (checkCacheIntegrety.success) {
-                    console.log('Loading from cache...');
+                if (this.validatePagesDB(JsonDataCache)) {
+                    console.log('Loading from cache...', JsonDataCache);
                     this.pagesDb.setPages(JsonDataCache);
                     cacheLoaded = true;
                 }
             }
 
             if (!cacheLoaded) {
-                console.log('Fetching updated pages database...');
+                console.log('Fetching updated pages database...', PagesDB.PAGES_DB_JSON_URL);
                 const jsonData: string = await this.fetchJson(PagesDB.PAGES_DB_JSON_URL);
-                await this.saveCache(jsonData, now);
-                console.log(jsonData);
-
-                this.pagesDb.setPages(jsonData as unknown as ICargoExport);
+                if (this.validatePagesDB(jsonData as unknown as ICargoExport)) {
+                    await this.saveCache(jsonData, now);
+                    this.pagesDb.setPages(jsonData as unknown as ICargoExport);
+                    console.log('Pages database updated successfully.', jsonData);
+                } else {
+                    console.log('Pages database NOT updated successfully.');
+                }
             }
-            console.log('Pages database updated successfully.');
         } catch (error: unknown) {
             if (error instanceof Error) {
                 console.error(`Failed to update pages database: ${error.message}`);
@@ -165,6 +122,64 @@ class StorageCache {
             }
         }
         return '';
+    }
+
+    validatePagesDB(db: ICargoExport): boolean {
+        //ICompanyCargo
+        const schemaCompanyCargo = z.object({
+            PageID: z.string(),
+            PageName: z.string(),
+            Industry: z.string(),
+            ParentCompany: z.string(),
+            Type: z.string(),
+            Website: z.string(),
+        });
+
+        //IIncidentCargo
+        const schemaIncidentCargo = z.object({
+            PageID: z.string(),
+            PageName: z.string(),
+            Company: z.string(),
+            Description: z.string(),
+            EndDate: z.string(),
+            Product: z.string(),
+            ProductLine: z.string(),
+            StartDate: z.string(),
+            Status: z.string(),
+            Type: z.string(),
+        });
+
+        //IProductCargo
+        const schemaProductCargo = z.object({
+            PageID: z.string(),
+            PageName: z.string(),
+            Category: z.string(),
+            Company: z.string(),
+            Description: z.string(),
+            ProductLine: z.string(),
+            Website: z.string(),
+        });
+
+        //IProductLineCargo
+        const schemaProductLine = z.object({
+            PageID: z.string(),
+            PageName: z.string(),
+            Category: z.string(),
+            Company: z.string(),
+            Description: z.string(),
+            Website: z.string(),
+        });
+
+        //ICargoExport
+        const schemaCargoExport = z.object({
+            Company: z.array(schemaCompanyCargo),
+            Incident: z.array(schemaIncidentCargo),
+            Product: z.array(schemaProductCargo),
+            ProductLine: z.array(schemaProductLine),
+        });
+
+        const result = schemaCargoExport.safeParse(db);
+        return result.success;
     }
 }
 

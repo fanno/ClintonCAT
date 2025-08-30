@@ -11,12 +11,14 @@ class Preferences {
     static readonly DEFAULT_DOMAIN_EXCLUSIONS = ['rossmanngroup.com'];
 
     static readonly AUTO_UPDATE_PAGESDB_KEY = 'auto_update_pagesdb';
+    static readonly AUTO_UPDATE_PAGESDB_INTERVAL_KEY = 'auto_update_interval_pagesdb';
 
     static isEnabled = new ObservableValue<boolean>(true);
     static domainExclusions = new ObservableSet<string>();
     static browserNotificationsEnabled = new ObservableValue<boolean>(true);
     static pageNotificationsEnabled = new ObservableValue<boolean>(true);
     static autoUpdateDB = new ObservableValue<boolean>(true);
+    static autoUpdateIntervalDB = new ObservableValue<number>(1);
 
     // Injected storage backends  (TODO: do we need both?)
     // Sync is used to share data across browsers if logged in, e.g. plugin settings
@@ -46,6 +48,7 @@ class Preferences {
         this.browserNotificationsEnabled.removeAllListeners();
         this.pageNotificationsEnabled.removeAllListeners();
         this.autoUpdateDB.removeAllListeners();
+        this.autoUpdateIntervalDB.removeAllListeners();
 
         // Set up default callbacks
         this.isEnabled.addListener(this.IS_ENABLED_KEY, (result: boolean) => {
@@ -66,6 +69,10 @@ class Preferences {
 
         this.autoUpdateDB.addListener(this.AUTO_UPDATE_PAGESDB_KEY, (result: boolean) => {
             void this.setPreference(Preferences.AUTO_UPDATE_PAGESDB_KEY, result);
+        });
+
+        this.autoUpdateIntervalDB.addListener(this.AUTO_UPDATE_PAGESDB_INTERVAL_KEY, (result: number) => {
+            void this.setPreference(Preferences.AUTO_UPDATE_PAGESDB_INTERVAL_KEY, result);
         });
 
         // Attempt preference retrieval
@@ -104,6 +111,13 @@ class Preferences {
         } else {
             this.autoUpdateDB.value = true;
         }
+
+        const rawAutoUpdateIntervalDB = await this.getPreference(this.AUTO_UPDATE_PAGESDB_KEY);
+        if (typeof rawAutoUpdateIntervalDB === 'number') {
+            this.autoUpdateIntervalDB.value = rawAutoUpdateIntervalDB;
+        } else {
+            this.autoUpdateIntervalDB.value = 1;
+        }
     }
 
     public static dump(): void {
@@ -112,7 +126,8 @@ class Preferences {
             `DomainExclusions = ${Preferences.domainExclusions.toString()}, ` +
             `BrowserNotificationsEnabled = ${Preferences.browserNotificationsEnabled.toString()}, ` +
             `PageNotificationsEnabled = ${Preferences.pageNotificationsEnabled.toString()}, ` +
-            `autoUpdateDB = ${Preferences.autoUpdateDB.toString()}`;
+            `autoUpdateDB = ${Preferences.autoUpdateDB.toString()}, ` +
+            `autoUpdateIntervalDB = ${Preferences.autoUpdateIntervalDB.toString()}`;
         console.log(msg);
     }
 

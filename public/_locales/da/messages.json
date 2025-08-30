@@ -81,5 +81,13 @@
     },
     "AUTO_UPDATE_PAGESDB": {
         "message": "Automatisk opdatering"
+    },
+    "PAGES_DATABASE_UPDATE_INTERVAL": {
+        "message": "Opdatere hver $days$ dag",
+        "placeholders": {
+            "days": {
+                "content": "$1"
+            }
+        }
     }
 }

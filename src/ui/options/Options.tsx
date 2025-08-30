@@ -1,5 +1,5 @@
 import useEffectOnce from '@/utils/hooks/use-effect-once';
-import React, { FormEvent, useState } from 'react';
+import React, { FormEvent, useState, ChangeEvent } from 'react';
 import { createRoot } from 'react-dom/client';
 import { getDomain } from 'tldts';
 import classNames from 'classnames';
@@ -26,6 +26,7 @@ const Options = () => {
                 setItems([...Preferences.domainExclusions.value]);
 
                 setAutoUpdateDB(Preferences.autoUpdateDB.value);
+                setAutoUpdateIntervalDB(Preferences.autoUpdateIntervalDB.value);
             })
             .catch((error: unknown) => console.error('Failed to initialize preferences:', error));
 
@@ -72,6 +73,14 @@ const Options = () => {
     const toggleAutoUpdateDB = () => {
         setAutoUpdateDB(!autoUpdateDB);
         Preferences.autoUpdateDB.value = Boolean(!autoUpdateDB);
+    };
+
+    const [autoUpdateIntervalDB, setAutoUpdateIntervalDB] = useState(1);
+    const setAutoUpdateIntervalDBOnChange = (event: ChangeEvent<HTMLInputElement>) => {
+        setAutoUpdateIntervalDB(Number(event.currentTarget.value));
+    };
+    const setAutoUpdateIntervalDBSave = () => {
+        Preferences.autoUpdateIntervalDB.value = autoUpdateIntervalDB;
     };
 
     return (
@@ -144,6 +153,24 @@ const Options = () => {
                                 <input type="checkbox" onClick={toggleAutoUpdateDB} checked={autoUpdateDB} />
                                 <span className={styles.toggleSlider} />
                             </label>
+                        </div>
+                        <span>{t('PAGES_DATABASE_UPDATE_INTERVAL', [autoUpdateIntervalDB.toString()])}</span>
+                        <div className={styles.slidecontainer}>
+                            <input
+                                type="range"
+                                value={autoUpdateIntervalDB}
+                                min="1"
+                                max="7"
+                                onChange={setAutoUpdateIntervalDBOnChange}
+                                onMouseUp={setAutoUpdateIntervalDBSave}
+                                onTouchEnd={setAutoUpdateIntervalDBSave}
+                                className={styles.slider}
+                                list="dbupdateinterval-data"
+                            />
+                            <datalist className={styles.sliderDatalist} id="dbupdateinterval-data">
+                                <option value="1" label="1"></option>
+                                <option value="7" label="7"></option>
+                            </datalist>
                         </div>
                     </div>
                 </div>
