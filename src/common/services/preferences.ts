@@ -108,7 +108,7 @@ class Preferences {
             throw new Error('No preferenceStore defined! Call setBackingStores() first.');
         }
         await this.preferenceStore.set(key, value);
-        console.log(`(setPreference) ${key} = ${JSON.stringify(value)}`);
+        //console.log(`(setPreference) ${key} = ${JSON.stringify(value)}`);
     }
 
     static async getPreference(key: string): Promise<unknown> {
@@ -116,7 +116,7 @@ class Preferences {
             throw new Error('No preferenceStore defined! Call setBackingStores() first.');
         }
         const value = await this.preferenceStore.get(key);
-        console.log(`(getPreference) ${key} =>`, value);
+        //console.log(`(getPreference) ${key} =>`, value);
         return value;
     }
 
@@ -126,7 +126,7 @@ class Preferences {
             throw new Error('No localStore defined! Call setBackingStores() first.');
         }
         await this.localStore.set(key, value);
-        console.log(`(setStorage) ${key} = ${JSON.stringify(value)}`);
+        //console.log(`(setStorage) ${key} = ${JSON.stringify(value)}`);
     }
 
     static async getStorage(key: string): Promise<unknown> {
@@ -134,7 +134,7 @@ class Preferences {
             throw new Error('No localStore defined! Call setBackingStores() first.');
         }
         const value = await this.localStore.get(key);
-        console.log(`(getStorage) ${key} =>`, value);
+        //console.log(`(getStorage) ${key} =>`, value);
         return value;
     }
 }

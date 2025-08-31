@@ -25,7 +25,7 @@ class BrowserSyncStorage implements IStorageBackend {
         try {
             const result = await browser.storage.sync.get(key);
             const rawValue: unknown = result[key];
-            console.log('Raw value', rawValue, typeof rawValue);
+            // console.log('Raw value', rawValue, typeof rawValue);
 
             if (rawValue === undefined || rawValue === null) {
                 console.log(`BrowserSyncStorage.get: ${key} => null`);
@@ -39,7 +39,7 @@ class BrowserSyncStorage implements IStorageBackend {
 
             try {
                 const parsedValue = JSON.parse(rawValue) as unknown;
-                console.log(`BrowserSyncStorage.get: ${key} =>`, parsedValue);
+                //console.log(`BrowserSyncStorage.get: ${key} =>`, parsedValue);
 
                 return parsedValue !== null ? parsedValue : null;
             } catch (_error) {

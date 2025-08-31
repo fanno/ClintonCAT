@@ -6,6 +6,8 @@ import { IProductLineCargo, ProductLinePage } from '@/models/product-line';
 import escapeRegex from '@/utils/helpers/escape-regex';
 import pagesDbJsonFile from '../data/pages_db.json'; // assert { type: 'json' };
 
+import fuzzysort from 'fuzzysort';
+
 export interface ICargoExport {
     Company: ICompanyCargo[];
     Incident: IIncidentCargo[];
@@ -161,4 +163,87 @@ export class PagesDB {
         results.addPageEntries(pages);
         return results;
     }
+
+    public fuzzySearchInnerText(
+        innerText: string,
+        scoreThresshold: number = 0.85,
+        minLength: number = 10
+    ): CATWikiPageSearchResults {
+        const results = new CATWikiPageSearchResults();
+
+        const content = innerText
+            .split(/\r?\n/)
+            .map((line) => line.replace(/[\u200B-\u200D\uFEFF]/g, '').trim())
+            .filter((line) => line.length >= minLength);
+
+        let resultMap = new Map<number, IFussySearchResult>();
+
+        this.companyPages.forEach((page) => {
+            resultMap = this.fuzzySearchContent(content, page.pageName, page.pageId, scoreThresshold, resultMap);
+            resultMap = this.fuzzySearchContent(content, page.parentCompany, page.pageId, scoreThresshold, resultMap);
+        });
+
+        this.incidentPages.forEach((page) => {
+            resultMap = this.fuzzySearchContent(content, page.pageName, page.pageId, scoreThresshold, resultMap);
+            resultMap = this.fuzzySearchContent(content, page.productLine, page.pageId, scoreThresshold, resultMap);
+            resultMap = this.fuzzySearchContent(content, page.product, page.pageId, scoreThresshold, resultMap);
+        });
+
+        this.productPages.forEach((page) => {
+            resultMap = this.fuzzySearchContent(content, page.pageName, page.pageId, scoreThresshold, resultMap);
+            resultMap = this.fuzzySearchContent(content, page.productLine, page.pageId, scoreThresshold, resultMap);
+            resultMap = this.fuzzySearchContent(content, page.company, page.pageId, scoreThresshold, resultMap);
+        });
+
+        this.productLinePages.forEach((page) => {
+            resultMap = this.fuzzySearchContent(content, page.pageName, page.pageId, scoreThresshold, resultMap);
+            resultMap = this.fuzzySearchContent(content, page.company, page.pageId, scoreThresshold, resultMap);
+        });
+
+        console.log('fuzzySearchInnerText', resultMap);
+
+        this.allPages.forEach((page) => {
+            if (resultMap.has(page.pageId)) {
+                results.addPageEntry(page);
+            }
+        });
+
+        return results;
+    }
+
+    public fuzzySearchContent(
+        content: string[],
+        query: string,
+        pageID: number,
+        scoreThresshold: number,
+        current: Map<number, IFussySearchResult>
+    ): Map<number, IFussySearchResult> {
+        const options = {
+            all: false,
+            threshold: scoreThresshold,
+        };
+
+        const results = fuzzysort.go(query, content, options);
+        results.forEach((result) => {
+            const score = current.get(pageID)?.score ?? 0;
+
+            if (result.score > score) {
+                const data: IFussySearchResult = {
+                    score: result.score,
+                    search: query,
+                    text: result.target,
+                };
+
+                current.set(pageID, data);
+            }
+        });
+
+        return current;
+    }
+}
+
+interface IFussySearchResult {
+    score: number;
+    search: string;
+    text: string;
 }
