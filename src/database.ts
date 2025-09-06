@@ -6,7 +6,7 @@ import { IProductLineCargo, ProductLinePage } from '@/models/product-line';
 import escapeRegex from '@/utils/helpers/escape-regex';
 import pagesDbJsonFile from '../data/pages_db.json'; // assert { type: 'json' };
 
-import fuzzysort from 'fuzzysort';
+import { FussySearch, IFussySearchOptions } from '@/utils/fuzzysearch';
 
 export interface ICargoExport {
     Company: ICompanyCargo[];
@@ -147,8 +147,6 @@ export class PagesDB {
                 const lowerTitle = page.pageName.toLowerCase();
                 let matchCount = 0;
                 for (const word of lowerQueryWords) {
-                    // Use word boundaries to reduce false positives
-                    // and escape special regex characters to handle queries like "(test)".
                     const regex = new RegExp(`\\b${escapeRegex(word)}\\b`, 'i');
                     if (regex.test(lowerTitle)) {
                         matchCount++;
@@ -164,86 +162,243 @@ export class PagesDB {
         return results;
     }
 
-    public fuzzySearchInnerText(
-        innerText: string,
-        scoreThresshold: number = 0.85,
-        minLength: number = 10
-    ): CATWikiPageSearchResults {
+    public fuzzyTextSearch(innerText: string, options: IFussySearchDatabaseOptions): CATWikiPageSearchResults {
         const results = new CATWikiPageSearchResults();
+        const now = Date.now();
 
         const content = innerText
             .split(/\r?\n/)
             .map((line) => line.replace(/[\u200B-\u200D\uFEFF]/g, '').trim())
-            .filter((line) => line.length >= minLength);
+            .filter((line) => {
+                const min = options.minLength ?? 0;
+                const max = options.maxLength ?? 0;
 
-        let resultMap = new Map<number, IFussySearchResult>();
+                return line.length >= min && (max == 0 || line.length <= max);
+            });
 
-        this.companyPages.forEach((page) => {
-            resultMap = this.fuzzySearchContent(content, page.pageName, page.pageId, scoreThresshold, resultMap);
-            resultMap = this.fuzzySearchContent(content, page.parentCompany, page.pageId, scoreThresshold, resultMap);
+        let resultMap = new Map<number, IFussySearch>();
+
+        console.log('SearchInnerText: options', options);
+
+        const search: IFussySearch = {
+            rules: {},
+        };
+
+        content.forEach((text) => {
+            search.text = text;
+            this.companyPages.forEach((page) => {
+                search.rules.scoreThresshold = options.companyPages.pageName.scoreThresshold ?? 0;
+                if (search.rules.scoreThresshold > 0) {
+                    search.pageID = page.pageId;
+                    search.context = 'companyPages.pageName';
+                    search.rules = options.companyPages.pageName;
+                    search.query = page.pageName;
+
+                    resultMap = this.fuzzyTextPageSearch(search, resultMap);
+                }
+                search.rules.scoreThresshold = options.companyPages.parentCompany.scoreThresshold ?? 0;
+                if (search.rules.scoreThresshold > 0) {
+                    search.pageID = page.pageId;
+                    search.context = 'companyPages.parentCompany';
+                    search.rules = options.companyPages.parentCompany;
+                    search.query = page.parentCompany;
+
+                    resultMap = this.fuzzyTextPageSearch(search, resultMap);
+                }
+            });
+
+            this.incidentPages.forEach((page) => {
+                search.rules.scoreThresshold = options.incidentPages.pageName.scoreThresshold ?? 0;
+                if (search.rules.scoreThresshold > 0) {
+                    search.pageID = page.pageId;
+                    search.context = 'incidentPages.pageName';
+                    search.rules = options.incidentPages.pageName;
+                    search.query = page.pageName;
+
+                    resultMap = this.fuzzyTextPageSearch(search, resultMap);
+                }
+                search.rules.scoreThresshold = options.incidentPages.productLine.scoreThresshold ?? 0;
+                if (search.rules.scoreThresshold > 0) {
+                    search.pageID = page.pageId;
+                    search.context = 'incidentPages.productLine';
+                    search.rules = options.incidentPages.productLine;
+                    search.query = page.productLine;
+
+                    resultMap = this.fuzzyTextPageSearch(search, resultMap);
+                }
+                search.rules.scoreThresshold = options.incidentPages.product.scoreThresshold ?? 0;
+                if (search.rules.scoreThresshold > 0) {
+                    search.pageID = page.pageId;
+                    search.context = 'incidentPages.product';
+                    search.rules = options.incidentPages.product;
+                    search.query = page.product;
+
+                    resultMap = this.fuzzyTextPageSearch(search, resultMap);
+                }
+            });
+
+            this.productPages.forEach((page) => {
+                search.rules.scoreThresshold = options.productPages.pageName.scoreThresshold ?? 0;
+                if (search.rules.scoreThresshold > 0) {
+                    search.pageID = page.pageId;
+                    search.context = 'productPages.pageName';
+                    search.rules = options.productPages.pageName;
+                    search.query = page.pageName;
+
+                    resultMap = this.fuzzyTextPageSearch(search, resultMap);
+                }
+                search.rules.scoreThresshold = options.productPages.productLine.scoreThresshold ?? 0;
+                if (search.rules.scoreThresshold > 0) {
+                    search.pageID = page.pageId;
+                    search.context = 'productPages.productLine';
+                    search.rules = options.productPages.productLine;
+                    search.query = page.productLine;
+
+                    resultMap = this.fuzzyTextPageSearch(search, resultMap);
+                }
+                search.rules.scoreThresshold = options.productPages.company.scoreThresshold ?? 0;
+                if (search.rules.scoreThresshold > 0) {
+                    search.pageID = page.pageId;
+                    search.context = 'productPages.company';
+                    search.rules = options.productPages.company;
+                    search.query = page.company;
+
+                    resultMap = this.fuzzyTextPageSearch(search, resultMap);
+                }
+            });
+
+            this.productLinePages.forEach((page) => {
+                search.rules.scoreThresshold = options.productLinePages.pageName.scoreThresshold ?? 0;
+                if (search.rules.scoreThresshold > 0) {
+                    search.pageID = page.pageId;
+                    search.context = 'productLinePages.pageName';
+                    search.rules = options.productLinePages.pageName;
+                    search.query = page.pageName;
+
+                    resultMap = this.fuzzyTextPageSearch(search, resultMap);
+                }
+                search.rules.scoreThresshold = options.productLinePages.company.scoreThresshold ?? 0;
+                if (search.rules.scoreThresshold > 0) {
+                    search.pageID = page.pageId;
+                    search.context = 'productLinePages.company';
+                    search.rules = options.productLinePages.company;
+                    search.query = page.company;
+
+                    resultMap = this.fuzzyTextPageSearch(search, resultMap);
+                }
+            });
         });
 
-        this.incidentPages.forEach((page) => {
-            resultMap = this.fuzzySearchContent(content, page.pageName, page.pageId, scoreThresshold, resultMap);
-            resultMap = this.fuzzySearchContent(content, page.productLine, page.pageId, scoreThresshold, resultMap);
-            resultMap = this.fuzzySearchContent(content, page.product, page.pageId, scoreThresshold, resultMap);
-        });
-
-        this.productPages.forEach((page) => {
-            resultMap = this.fuzzySearchContent(content, page.pageName, page.pageId, scoreThresshold, resultMap);
-            resultMap = this.fuzzySearchContent(content, page.productLine, page.pageId, scoreThresshold, resultMap);
-            resultMap = this.fuzzySearchContent(content, page.company, page.pageId, scoreThresshold, resultMap);
-        });
-
-        this.productLinePages.forEach((page) => {
-            resultMap = this.fuzzySearchContent(content, page.pageName, page.pageId, scoreThresshold, resultMap);
-            resultMap = this.fuzzySearchContent(content, page.company, page.pageId, scoreThresshold, resultMap);
-        });
-
-        console.log('fuzzySearchInnerText', resultMap);
+        const end = Date.now();
+        const total = end - now;
+        console.log('fuzzyTextSearch', total, resultMap);
 
         this.allPages.forEach((page) => {
             if (resultMap.has(page.pageId)) {
                 results.addPageEntry(page);
             }
         });
-
         return results;
     }
 
-    public fuzzySearchContent(
-        content: string[],
-        query: string,
-        pageID: number,
-        scoreThresshold: number,
-        current: Map<number, IFussySearchResult>
-    ): Map<number, IFussySearchResult> {
-        const options = {
-            all: false,
-            threshold: scoreThresshold,
+    public fuzzyTextPageSearch(
+        search: IFussySearch,
+        current: Map<number, IFussySearch>,
+        skipFounedPages: boolean = true
+    ): Map<number, IFussySearch> {
+        search.query = search.query ?? '';
+        if (search.query.length <= 0) return current;
+
+        search.rules.scoreThresshold = search.rules.scoreThresshold ?? 0;
+        if (search.rules.scoreThresshold <= 0) return current;
+
+        search.pageID = search.pageID ?? 0;
+
+        if (search.pageID <= 0) return current;
+        if (skipFounedPages && current.has(search.pageID)) return current;
+        search.text = search.text ?? '';
+
+        const options: IFussySearchOptions = {
+            caseSensetive: search.rules.caseSensetive,
         };
 
-        const results = fuzzysort.go(query, content, options);
-        results.forEach((result) => {
-            const score = current.get(pageID)?.score ?? 0;
-
-            if (result.score > score) {
-                const data: IFussySearchResult = {
-                    score: result.score,
-                    search: query,
-                    text: result.target,
-                };
-
-                current.set(pageID, data);
+        const score = FussySearch.score(search.query, search.text, options);
+        if (score >= search.rules.scoreThresshold) {
+            const currentScore = current.get(search.pageID)?.score ?? 0;
+            if (score > currentScore) {
+                current.set(search.pageID, {
+                    ...search,
+                    score: score,
+                } as IFussySearch);
             }
-        });
-
+        }
         return current;
     }
 }
 
-interface IFussySearchResult {
-    score: number;
-    search: string;
-    text: string;
+export interface IFussySearchDatabaseOptions {
+    companyPages: IFussySearchPageNameOption & IFussySearchParentCompany;
+    incidentPages: IFussySearchPageNameOption & IFussySearchProduct & IFussySearchProductLine;
+    productPages: IFussySearchPageNameOption & IFussySearchCompany & IFussySearchProductLine;
+    productLinePages: IFussySearchPageNameOption & IFussySearchProduct & IFussySearchCompany & IFussySearchProductLine;
+    minLength?: number;
+    maxLength?: number;
+}
+
+interface IFussySearchPageNameOption {
+    pageName: IFussySearchRules;
+}
+
+interface IFussySearchParentCompany {
+    parentCompany: IFussySearchRules;
+}
+
+interface IFussySearchCompany {
+    company: IFussySearchRules;
+}
+
+interface IFussySearchProduct {
+    product: IFussySearchRules;
+}
+
+interface IFussySearchProductLine {
+    productLine: IFussySearchRules;
+}
+
+interface IFussySearchRules {
+    scoreThresshold?: number;
+    caseSensetive?: boolean;
+}
+
+export const FussySearchDefaultOptions: IFussySearchDatabaseOptions = {
+    companyPages: {
+        pageName: { scoreThresshold: 0 },
+        parentCompany: { scoreThresshold: 0.97, caseSensetive: true },
+    },
+    incidentPages: {
+        pageName: { scoreThresshold: 0 },
+        product: { scoreThresshold: 0 },
+        productLine: { scoreThresshold: 0 },
+    },
+    productPages: {
+        pageName: { scoreThresshold: 0.75 },
+        company: { scoreThresshold: 0.97, caseSensetive: true },
+        productLine: { scoreThresshold: 0.75 },
+    },
+    productLinePages: {
+        pageName: { scoreThresshold: 0.75 },
+        company: { scoreThresshold: 0.97, caseSensetive: true },
+        product: { scoreThresshold: 0.75 },
+        productLine: { scoreThresshold: 0.75 },
+    },
+    minLength: 10,
+};
+
+export interface IFussySearch {
+    query?: string;
+    rules: IFussySearchRules;
+    text?: string;
+    context?: string;
+    pageID?: number;
+    score?: number;
 }

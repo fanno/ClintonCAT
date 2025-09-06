@@ -1,5 +1,5 @@
 import { IContentScannerPlugin, IScanParameters } from '@/common/services/content-scanner.types';
-import { CATWikiPageSearchResults } from '@/database';
+import { CATWikiPageSearchResults, FussySearchDefaultOptions } from '@/database';
 
 export abstract class BaseDomainScanner implements IContentScannerPlugin {
     abstract metaInfo(): string;
@@ -100,9 +100,11 @@ export abstract class BaseDomainScanner implements IContentScannerPlugin {
         }
 
         if (params.innerText) {
+            const options = FussySearchDefaultOptions;
+
             foundAnyPages =
                 this.performSearch(
-                    () => pagesDb.fuzzySearchInnerText(params.innerText),
+                    () => pagesDb.fuzzyTextSearch(params.innerText, options),
                     `body.innerText Fuzzy Word Match`,
                     combinedResults,
                     scannerId
